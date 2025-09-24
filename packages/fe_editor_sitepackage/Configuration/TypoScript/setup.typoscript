@@ -1,0 +1,25 @@
+# Include Bootstrap Package setup
+@import 'EXT:bootstrap_package/Configuration/TypoScript/setup.typoscript'
+
+# Include FE Editor Extension when installed
+@import 'EXT:pixelcoda_fe_editor/Configuration/TypoScript/setup.typoscript'
+
+# Custom configuration
+page {
+    # Include custom CSS
+    includeCSS {
+        fe_editor_sitepackage = EXT:fe_editor_sitepackage/Resources/Public/Css/custom.css
+    }
+    
+    # Include custom JavaScript
+    includeJSFooter {
+        fe_editor_sitepackage = EXT:fe_editor_sitepackage/Resources/Public/JavaScript/custom.js
+    }
+    
+    # Meta tags
+    meta {
+        description = FE Editor Demo - Live Frontend Editing for TYPO3
+        author = pixelcoda
+        viewport = width=device-width, initial-scale=1
+    }
+}

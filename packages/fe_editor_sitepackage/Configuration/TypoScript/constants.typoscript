@@ -1,0 +1,23 @@
+# Include Bootstrap Package constants
+@import 'EXT:bootstrap_package/Configuration/TypoScript/constants.typoscript'
+
+# Customizing the Bootstrap Package
+page {
+    logo {
+        file = EXT:fe_editor_sitepackage/Resources/Public/Images/logo.svg
+        fileInverted = EXT:fe_editor_sitepackage/Resources/Public/Images/logo-inverted.svg
+        height = 52
+        width = 192
+    }
+    
+    favicon {
+        file = EXT:fe_editor_sitepackage/Resources/Public/Icons/favicon.ico
+    }
+    
+    theme {
+        copyright {
+            enable = 1
+            text = © 2025 pixelcoda - FE Editor Demo
+        }
+    }
+}

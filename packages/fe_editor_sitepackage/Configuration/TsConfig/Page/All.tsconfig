@@ -1,0 +1,24 @@
+# Include Bootstrap Package Page TSconfig
+@import 'EXT:bootstrap_package/Configuration/TsConfig/Page/All.tsconfig'
+
+# Custom Page TSconfig
+TCEFORM {
+    pages {
+        # Simplify page properties for editors
+        layout.disabled = 1
+        
+        # Backend layouts
+        backend_layout {
+            removeItems = -1,pagets__2_columns,pagets__3_columns
+        }
+        
+        backend_layout_next_level {
+            removeItems = -1,pagets__2_columns,pagets__3_columns
+        }
+    }
+    
+    tt_content {
+        # Enable FE Editor for content elements
+        # This will be activated when pixelcoda_fe_editor is installed
+    }
+}

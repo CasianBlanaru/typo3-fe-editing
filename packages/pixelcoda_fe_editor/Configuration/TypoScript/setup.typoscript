@@ -1,0 +1,13 @@
+# Template paths for our content element templates
+lib.contentElement {
+  templateRootPaths.920 = EXT:pixelcoda_fe_editor/Resources/Private/Templates/Content/
+  partialRootPaths.920  = EXT:pixelcoda_fe_editor/Resources/Private/Partials/
+  layoutRootPaths.920   = EXT:pixelcoda_fe_editor/Resources/Private/Layouts/
+}
+
+tt_content {
+  pc_demo =< lib.contentElement
+  pc_demo {
+    templateName = PcDemo
+  }
+}

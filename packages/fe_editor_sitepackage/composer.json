@@ -1,0 +1,21 @@
+{
+    "name": "pixelcoda/fe-editor-sitepackage",
+    "type": "typo3-cms-extension",
+    "description": "Sitepackage for FE Editor Demo",
+    "homepage": "https://pixelcoda.com",
+    "license": "GPL-2.0-or-later",
+    "require": {
+        "bk2k/bootstrap-package": "^15.0",
+        "typo3/cms-core": "^13.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Pixelcoda\\FeEditorSitepackage\\": "Classes/"
+        }
+    },
+    "extra": {
+        "typo3/cms": {
+            "extension-key": "fe_editor_sitepackage"
+        }
+    }
+}
