@@ -1,0 +1,197 @@
+/**
+ * PixelCoda FE Editor - Frontend Styles
+ */
+
+/* Toolbar */
+#pc-fe-editor-toolbar {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background: #111827;
+    border-radius: 12px;
+    padding: 8px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+    z-index: 10000;
+    display: flex;
+    gap: 4px;
+    backdrop-filter: blur(10px);
+}
+
+#pc-fe-editor-toolbar button {
+    width: 32px;
+    height: 32px;
+    border: none;
+    background: transparent;
+    color: #f9fafb;
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    position: relative;
+}
+
+#pc-fe-editor-toolbar button:hover {
+    background: rgba(255, 255, 255, 0.1);
+    transform: translateY(-1px);
+}
+
+#pc-fe-editor-toolbar button:active {
+    transform: translateY(0);
+}
+
+#pc-fe-editor-toolbar button.active {
+    background: #0ea5e9;
+    color: white;
+}
+
+#pc-fe-editor-toolbar button svg {
+    width: 16px;
+    height: 16px;
+}
+
+/* Editable fields */
+[data-pc-field].pc-editable {
+    outline: 2px dashed #0ea5e9;
+    outline-offset: 2px;
+    border-radius: 4px;
+    transition: outline 0.2s ease;
+}
+
+[data-pc-field].pc-editable:focus {
+    outline-color: #0284c7;
+    outline-width: 3px;
+}
+
+/* Dropzone */
+.pc-dropzone {
+    border: 2px dashed #d1d5db;
+    border-radius: 8px;
+    padding: 20px;
+    text-align: center;
+    margin: 20px 0;
+    background: #f9fafb;
+    transition: all 0.2s ease;
+    position: relative;
+}
+
+.pc-dropzone:hover {
+    border-color: #0ea5e9;
+    background: #f0f9ff;
+}
+
+.pc-dropzone .pc-add-element-btn {
+    background: #0ea5e9;
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.pc-dropzone .pc-add-element-btn:hover {
+    background: #0284c7;
+    transform: translateY(-1px);
+}
+
+.pc-dropzone .pc-add-element-btn svg {
+    width: 16px;
+    height: 16px;
+}
+
+/* Notifications */
+.pc-notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 12px 20px;
+    border-radius: 8px;
+    color: white;
+    font-weight: 500;
+    z-index: 10001;
+    animation: slideIn 0.3s ease;
+    max-width: 300px;
+}
+
+.pc-notification-success {
+    background: #10b981;
+}
+
+.pc-notification-error {
+    background: #ef4444;
+}
+
+.pc-notification-info {
+    background: #3b82f6;
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+/* Demo content styling */
+.pc-demo-content {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 40px;
+    border-radius: 12px;
+    margin: 20px 0;
+    position: relative;
+    overflow: hidden;
+}
+
+.pc-demo-content::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="25" cy="25" r="1" fill="white" opacity="0.1"/><circle cx="75" cy="75" r="1" fill="white" opacity="0.1"/><circle cx="50" cy="10" r="0.5" fill="white" opacity="0.1"/><circle cx="10" cy="60" r="0.5" fill="white" opacity="0.1"/><circle cx="90" cy="40" r="0.5" fill="white" opacity="0.1"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
+    pointer-events: none;
+}
+
+.pc-demo-content h1,
+.pc-demo-content h2,
+.pc-demo-content h3 {
+    margin-top: 0;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.pc-demo-content p {
+    line-height: 1.6;
+    margin-bottom: 1rem;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+    #pc-fe-editor-toolbar {
+        bottom: 10px;
+        right: 10px;
+        padding: 6px;
+    }
+    
+    #pc-fe-editor-toolbar button {
+        width: 28px;
+        height: 28px;
+    }
+    
+    .pc-notification {
+        right: 10px;
+        left: 10px;
+        max-width: none;
+    }
+}
