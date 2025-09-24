@@ -1,12 +1,20 @@
 <?php
-declare(strict_types=1);
 
-use PixelCoda\FeEditor\Api\SaveController;
+namespace PixelCoda\FeEditor\Configuration;
 
-return [
-    'fe_editor_save' => [
-        'path'   => '/fe-editor/save',
-        'target' => SaveController::class . '::handle',
-        'access' => 'csrfToken', // BE-Auth + CSRF
-    ],
-];
+use PixelCoda\FeEditor\Controller\SaveController;
+use TYPO3\CMS\Core\Utility\ExtensionManagementUtility;
+
+class AjaxRoutes
+{
+    public static function register(): void
+    {
+        ExtensionManagementUtility::addAjaxRoute(
+            'fe_editor_save',
+            SaveController::class . '::handle',
+            [
+                'access' => 'csrfToken',
+            ]
+        );
+    }
+}

@@ -1,29 +1,33 @@
 <?php
-declare(strict_types=1);
+
+namespace PixelCoda\FeEditor\Configuration;
 
 use TYPO3\CMS\Core\Imaging\IconProvider\SvgIconProvider;
+use TYPO3\CMS\Core\Imaging\IconRegistry;
+use TYPO3\CMS\Core\Utility\GeneralUtility;
 
-return [
-  'icons' => [
-    'ext-pixelcoda-fe-editor' => [
-      'provider' => SvgIconProvider::class,
-      'source'   => 'EXT:pixelcoda_fe_editor/Resources/Public/Icons/ext-icon.svg',
-    ],
-    'pc-fe-edit' => [
-      'provider' => SvgIconProvider::class,
-      'source'   => 'EXT:pixelcoda_fe_editor/Resources/Public/Icons/edit.svg',
-    ],
-    'pc-fe-ai' => [
-      'provider' => SvgIconProvider::class,
-      'source'   => 'EXT:pixelcoda_fe_editor/Resources/Public/Icons/ai.svg',
-    ],
-    'pc-fe-add' => [
-      'provider' => SvgIconProvider::class,
-      'source'   => 'EXT:pixelcoda_fe_editor/Resources/Public/Icons/add.svg',
-    ],
-    'pc-fe-close' => [
-      'provider' => SvgIconProvider::class,
-      'source'   => 'EXT:pixelcoda_fe_editor/Resources/Public/Icons/close.svg',
-    ],
-  ],
-];
+class Icons
+{
+    public static function register(): void
+    {
+        $iconRegistry = GeneralUtility::makeInstance(IconRegistry::class);
+        
+        $icons = [
+            'ext-icon' => 'ext-icon.svg',
+            'edit' => 'edit.svg',
+            'ai' => 'ai.svg',
+            'add' => 'add.svg',
+            'close' => 'close.svg',
+        ];
+
+        foreach ($icons as $identifier => $file) {
+            $iconRegistry->registerIcon(
+                $identifier,
+                SvgIconProvider::class,
+                [
+                    'source' => 'EXT:pixelcoda_fe_editor/Resources/Public/Icons/' . $file,
+                ]
+            );
+        }
+    }
+}

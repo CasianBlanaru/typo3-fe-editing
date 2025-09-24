@@ -1,12 +1,27 @@
 <?php
-defined('TYPO3') || die();
 
 use PixelCoda\FeEditor\Middleware\FrontendEditOverlay;
+use PixelCoda\FeEditor\Configuration\AjaxRoutes;
+use PixelCoda\FeEditor\Configuration\Icons;
 
-// PSR-15 FE Middleware: injiziert Toolbar/JS nur für berechtigte BE-User
-$GLOBALS['TYPO3_CONF_VARS']['FE']['middlewares']['pixelcoda/fe-editor-overlay'] = [
+defined('TYPO3') or die();
+
+// Register middleware
+$GLOBALS['TYPO3_CONF_VARS']['FE']['middlewares']['pixelcoda-fe-editor'] = [
     'target' => FrontendEditOverlay::class,
-    'after'  => ['typo3/cms-frontend/tsfe'],
+    'before' => [
+        'typo3/cms-frontend/authentication',
+    ],
+    'after' => [
+        'typo3/cms-frontend/content-length-headers',
+    ],
 ];
 
-// Ajax-Route wird über Configuration/Backend/AjaxRoutes.php registriert (TYPO3.settings.ajaxUrls['fe_editor_save'])
+// Register AJAX routes
+AjaxRoutes::register();
+
+// Register icons
+Icons::register();
+
+// Register default configuration
+\PixelCoda\FeEditor\Configuration\DefaultConfiguration::register();

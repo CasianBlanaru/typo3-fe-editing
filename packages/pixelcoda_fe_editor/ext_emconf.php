@@ -1,14 +1,25 @@
 <?php
+
 $EM_CONF[$_EXTKEY] = [
-  'title' => 'PixelCoda FE Editor',
-  'description' => 'Core-nahes Frontend-Editing mit KI-Hooks, Dropzones und modernem UI (TYPO3 12/13/14)',
-  'category' => 'fe',
-  'state' => 'alpha',
-  'author' => 'PixelCoda',
-  'author_email' => '',
-  'version' => '0.2.0',
-  'icon' => 'EXT:pixelcoda_fe_editor/Resources/Public/Icons/ext-icon.svg',
-  'constraints' => [
-    'depends' => ['typo3' => '12.4.0-14.9.99']
-  ],
+    'title' => 'PixelCoda FE Editor',
+    'description' => 'Frontend editing extension for TYPO3 with AI integration and modern UI',
+    'category' => 'fe',
+    'author' => 'PixelCoda',
+    'author_email' => 'info@pixelcoda.com',
+    'state' => 'beta',
+    'clearCacheOnLoad' => 1,
+    'version' => '1.0.0',
+    'constraints' => [
+        'depends' => [
+            'typo3' => '12.0.0-13.99.99',
+            'php' => '8.1.0-8.4.99',
+        ],
+        'conflicts' => [],
+        'suggests' => [],
+    ],
+    'autoload' => [
+        'psr-4' => [
+            'PixelCoda\\FeEditor\\' => 'Classes/',
+        ],
+    ],
 ];

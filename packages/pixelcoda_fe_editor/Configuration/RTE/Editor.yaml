@@ -1,9 +1,0 @@
-editor:
-  config:
-    heading:
-      options:
-        - { model: 'paragraph', title: 'Text', class: 'ck-heading_paragraph' }
-        - { model: 'heading2',  view: 'h2', title: 'H2' }
-        - { model: 'heading3',  view: 'h3', title: 'H3' }
-    toolbar:
-      items: ['heading','|','bold','italic','link','bulletedList','numberedList','blockQuote','undo','redo']

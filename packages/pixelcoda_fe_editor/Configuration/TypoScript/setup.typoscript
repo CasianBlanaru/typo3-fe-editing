@@ -1,13 +1,32 @@
-# Template paths for our content element templates
-lib.contentElement {
-  templateRootPaths.920 = EXT:pixelcoda_fe_editor/Resources/Private/Templates/Content/
-  partialRootPaths.920  = EXT:pixelcoda_fe_editor/Resources/Private/Partials/
-  layoutRootPaths.920   = EXT:pixelcoda_fe_editor/Resources/Private/Layouts/
+# PixelCoda FE Editor Demo TypoScript
+
+# Configure the pc_demo content type
+tt_content.pc_demo =< lib.contentElement
+tt_content.pc_demo {
+    templateName = PcDemo
+    templateRootPaths {
+        10 = EXT:pixelcoda_fe_editor/Resources/Private/Templates/
+    }
+    partialRootPaths {
+        10 = EXT:pixelcoda_fe_editor/Resources/Private/Partials/
+    }
+    layoutRootPaths {
+        10 = EXT:pixelcoda_fe_editor/Resources/Private/Layouts/
+    }
+    dataProcessing {
+        10 = TYPO3\CMS\Frontend\DataProcessing\FlexFormProcessor
+    }
 }
 
-tt_content {
-  pc_demo =< lib.contentElement
-  pc_demo {
-    templateName = PcDemo
-  }
+# Add CSS and JS to frontend
+page.includeCSS {
+    pixelcodaFeEditor = EXT:pixelcoda_fe_editor/Resources/Public/Css/editor.css
 }
+
+page.includeJSFooter {
+    pixelcodaFeEditor = EXT:pixelcoda_fe_editor/Resources/Public/JavaScript/editor.js
+}
+
+# Add AJAX URL to page settings
+page.10.settings.ajaxUrls.fe_editor_save = {$plugin.tx_pixelcodafeeditor.ajaxUrl}
+page.10.settings.ajaxUrls.csrfToken = {$plugin.tx_pixelcodafeeditor.csrfToken}
