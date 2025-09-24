@@ -1,0 +1,18 @@
+# PixelCoda FE Editor - Static Template
+# This template provides the complete setup for the frontend editor
+
+# Include constants
+<INCLUDE_TYPOSCRIPT: source="FILE:EXT:pixelcoda_fe_editor/Configuration/TypoScript/constants.typoscript">
+
+# Include setup
+<INCLUDE_TYPOSCRIPT: source="FILE:EXT:pixelcoda_fe_editor/Configuration/TypoScript/setup.typoscript">
+
+# Add meta tags for AJAX configuration
+page.headerData.1000 = TEXT
+page.headerData.1000.value = <meta name="csrf-token" content="{$plugin.tx_pixelcodafeeditor.settings.csrfToken}">
+page.headerData.1001 = TEXT
+page.headerData.1001.value = <meta name="page-id" content="{$TSFE.id}">
+
+# Configure AJAX URLs in TYPO3 settings
+page.10.settings.ajaxUrls.fe_editor_save = {$plugin.tx_pixelcodafeeditor.settings.ajaxUrl}
+page.10.settings.ajaxUrls.csrfToken = {$plugin.tx_pixelcodafeeditor.settings.csrfToken}

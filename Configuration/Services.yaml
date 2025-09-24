@@ -1,0 +1,16 @@
+services:
+  _defaults:
+    autowire: true
+    autoconfigure: true
+    public: false
+
+  PixelCoda\FeEditor\:
+    resource: '../Classes/*'
+    exclude:
+      - '../Classes/Domain/Model/*'
+
+  PixelCoda\FeEditor\Service\AiProviderInterface:
+    alias: PixelCoda\FeEditor\Service\NullAiProvider
+
+  PixelCoda\FeEditor\Service\NullAiProvider:
+    public: true

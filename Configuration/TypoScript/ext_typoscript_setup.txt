@@ -1,0 +1,29 @@
+# PixelCoda FE Editor - Static Template Registration
+
+# This file registers the static template for inclusion in TYPO3
+# The template provides complete setup for the frontend editor
+
+# Template title and description
+title = PixelCoda FE Editor Demo
+description = Complete setup for frontend editing with AI integration and modern UI
+
+# Template constants
+constants {
+    # AJAX URL for saving content
+    plugin.tx_pixelcodafeeditor.settings.ajaxUrl = /typo3/ajax/fe_editor_save
+    
+    # CSRF Token (will be set dynamically)
+    plugin.tx_pixelcodafeeditor.settings.csrfToken = 
+    
+    # Enable AI features
+    plugin.tx_pixelcodafeeditor.settings.enableAi = 1
+    
+    # Theme selection
+    plugin.tx_pixelcodafeeditor.settings.theme = dark
+}
+
+# Template setup
+setup {
+    # Include the main template
+    <INCLUDE_TYPOSCRIPT: source="FILE:EXT:pixelcoda_fe_editor/Configuration/TypoScript/static_template.typoscript">
+}

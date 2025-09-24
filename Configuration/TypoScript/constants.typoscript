@@ -1,0 +1,20 @@
+# PixelCoda FE Editor Constants
+
+plugin.tx_pixelcodafeeditor {
+    settings {
+        # AJAX URL for saving content
+        ajaxUrl = {$plugin.tx_pixelcodafeeditor.settings.ajaxUrl}
+        # CSRF Token
+        csrfToken = {$plugin.tx_pixelcodafeeditor.settings.csrfToken}
+        # Enable AI features
+        enableAi = {$plugin.tx_pixelcodafeeditor.settings.enableAi}
+        # Theme (dark/light)
+        theme = {$plugin.tx_pixelcodafeeditor.settings.theme}
+    }
+}
+
+# Default values
+plugin.tx_pixelcodafeeditor.settings.ajaxUrl = /typo3/ajax/fe_editor_save
+plugin.tx_pixelcodafeeditor.settings.csrfToken = 
+plugin.tx_pixelcodafeeditor.settings.enableAi = 1
+plugin.tx_pixelcodafeeditor.settings.theme = dark

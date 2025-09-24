@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<xliff version="1.0">
+    <file source-language="en" datatype="plaintext" original="EXT:pixelcoda_fe_editor/Resources/Private/Language/locallang.xlf" date="2024-01-01T00:00:00Z" product-name="pixelcoda_fe_editor">
+        <header/>
+        <body>
+            <trans-unit id="content.pc_demo">
+                <source>PixelCoda Demo (editable)</source>
+            </trans-unit>
+            <trans-unit id="content.pc_demo.description">
+                <source>Demo content type with frontend editing capabilities</source>
+            </trans-unit>
+            <trans-unit id="toolbar.edit">
+                <source>Edit Content</source>
+            </trans-unit>
+            <trans-unit id="toolbar.ai">
+                <source>AI Assistant</source>
+            </trans-unit>
+            <trans-unit id="toolbar.add">
+                <source>Add Element</source>
+            </trans-unit>
+            <trans-unit id="notification.save_success">
+                <source>Content saved successfully</source>
+            </trans-unit>
+            <trans-unit id="notification.save_error">
+                <source>Failed to save content</source>
+            </trans-unit>
+            <trans-unit id="notification.create_success">
+                <source>New element created successfully</source>
+            </trans-unit>
+            <trans-unit id="notification.create_error">
+                <source>Failed to create new element</source>
+            </trans-unit>
+        </body>
+    </file>
+</xliff>
