@@ -1660,7 +1660,7 @@
         },
         {
             "name": "pixelcoda/fe-editor",
-            "version": "dev-main",
+            "version": "dev-master",
             "dist": {
                 "type": "path",
                 "url": "packages/pixelcoda_fe_editor",
@@ -1686,7 +1686,7 @@
         },
         {
             "name": "pixelcoda/fe-editor-sitepackage",
-            "version": "dev-main",
+            "version": "dev-master",
             "dist": {
                 "type": "path",
                 "url": "packages/fe_editor_sitepackage",
