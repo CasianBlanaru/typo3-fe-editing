@@ -36,7 +36,8 @@
                     await createContentElement(firstDropzone.dataset.targetPid, firstDropzone.dataset.colPos);
                 } else {
                     // Fallback: create in colPos 0 on current page
-                    const pid = document.querySelector('[data-pid]') ? .dataset.pid || '1';
+                    const pidElement = document.querySelector('[data-pid]');
+                    const pid = pidElement ? pidElement.dataset.pid : '1';
                     await createContentElement(pid, '0');
                 }
                 location.reload();
@@ -67,8 +68,8 @@
         field,
         value
     }) {
-        const url = TYPO3 ? .settings ? .ajaxUrls ? . ['fe_editor_save'];
-        const token = TYPO3 ? .security ? .csrfToken;
+        const url = TYPO3 && TYPO3.settings && TYPO3.settings.ajaxUrls ? TYPO3.settings.ajaxUrls['fe_editor_save'] : null;
+        const token = TYPO3 && TYPO3.security ? TYPO3.security.csrfToken : null;
         if (!url || !token) {
             console.error('Missing ajaxUrl or csrfToken');
             return;
@@ -93,8 +94,8 @@
     }
 
     async function createContentElement(pid, colPos) {
-        const url = TYPO3 ? .settings ? .ajaxUrls ? . ['fe_editor_save'];
-        const token = TYPO3 ? .security ? .csrfToken;
+        const url = TYPO3 && TYPO3.settings && TYPO3.settings.ajaxUrls ? TYPO3.settings.ajaxUrls['fe_editor_save'] : null;
+        const token = TYPO3 && TYPO3.security ? TYPO3.security.csrfToken : null;
         if (!url || !token) {
             console.error('Missing ajaxUrl or csrfToken');
             return;

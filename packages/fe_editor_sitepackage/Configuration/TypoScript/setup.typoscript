@@ -9,11 +9,13 @@ page {
     # Include custom CSS
     includeCSS {
         fe_editor_sitepackage = EXT:fe_editor_sitepackage/Resources/Public/Css/custom.css
+        pixelcoda_fe_editor = EXT:pixelcoda_fe_editor/Resources/Public/editor.css
     }
     
     # Include custom JavaScript
     includeJSFooter {
         fe_editor_sitepackage = EXT:fe_editor_sitepackage/Resources/Public/JavaScript/custom.js
+        pixelcoda_fe_editor = EXT:pixelcoda_fe_editor/Resources/Public/editor.js
     }
     
     # Meta tags
@@ -21,5 +23,49 @@ page {
         description = FE Editor Demo - Live Frontend Editing for TYPO3
         author = pixelcoda
         viewport = width=device-width, initial-scale=1
+    }
+    
+    # Frontend Editing Toolbar (always visible for demo)
+    footerData.10 = TEXT
+    footerData.10.value (
+        <link rel="stylesheet" href="/editor.css">
+        <div id="pc-fe-toolbar-root" class="pc-fe-toolbar">
+            <button id="pc-edit-toggle" class="btn" title="Bearbeiten">✏️</button>
+            <button id="pc-ai" class="btn" title="KI">🤖</button>
+            <button id="pc-add-global" class="btn" title="Element hinzufügen">➕</button>
+        </div>
+        <script>
+            window.TYPO3 = window.TYPO3 || { settings: {}, security: {} };
+            window.TYPO3.settings.ajaxUrls = window.TYPO3.settings.ajaxUrls || {};
+            window.TYPO3.settings.ajaxUrls['fe_editor_save'] = '/typo3/ajax/fe-editor/save';
+            window.TYPO3.security.csrfToken = 'demo-token';
+            window.demoMode = true;
+        </script>
+        <script src="/editor.js"></script>
+        <script>
+            // Demo Mode Overrides
+            window.saveField = async function(data) {
+                console.log('🎯 TYPO3 Demo: Saving field', data);
+                alert('TYPO3 Demo: Feld "' + data.field + '" würde gespeichert werden!');
+                return { ok: true };
+            };
+            window.createContentElement = async function(pid, colPos) {
+                console.log('🎯 TYPO3 Demo: Creating element', { pid, colPos });
+                alert('TYPO3 Demo: Neues Element würde erstellt werden!');
+                return { ok: true };
+            };
+        </script>
+    )
+}
+
+# Override content element templates for frontend editing
+lib.contentElement {
+    templateRootPaths.200 = EXT:fe_editor_sitepackage/Resources/Private/Templates/ContentElements/
+}
+
+# Override page layout for frontend editing
+page {
+    10 {
+        layoutRootPaths.200 = EXT:fe_editor_sitepackage/Resources/Private/Layouts/
     }
 }
