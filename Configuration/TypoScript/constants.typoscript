@@ -1,0 +1,10 @@
+# PixelCoda FE Editor - TypoScript Constants
+
+plugin.tx_pixelcodafeeditor {
+    settings {
+        # Extension settings can be configured here
+        enableAi = 1
+        enableNotifications = 1
+        toolbarPosition = bottom-right
+    }
+}
