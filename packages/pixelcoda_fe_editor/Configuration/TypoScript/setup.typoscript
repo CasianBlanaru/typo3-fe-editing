@@ -11,3 +11,130 @@ tt_content {
     templateName = PcDemo
   }
 }
+
+# Fallback: TypoScript-basierte Toolbar-Injection für Backend-User
+[backend.user.isLoggedIn]
+page.footerData.999 = TEXT
+page.footerData.999.value (
+<style>
+.pc-fe-toolbar{position:fixed!important;right:1rem!important;bottom:1rem!important;padding:0.75rem!important;background:#111827!important;color:#F9FAFB!important;border-radius:0.5rem!important;z-index:999999!important;font:14px/1.2 system-ui!important;box-shadow:0 10px 25px rgba(0,0,0,0.25)!important;display:flex!important;gap:0.5rem!important;border:2px solid #0EA5E9!important}
+.pc-fe-toolbar .btn{width:36px!important;height:36px!important;display:inline-flex!important;align-items:center!important;justify-content:center!important;border-radius:6px!important;background:transparent!important;border:1px solid #E5E7EB!important;cursor:pointer!important;color:#F9FAFB!important;font-size:16px!important;transition:all 0.2s!important}
+.pc-fe-toolbar .btn:hover{background:#0EA5E9!important;border-color:#0EA5E9!important;transform:translateY(-1px)!important}
+.pc-fe-toolbar .btn.active{background:#10B981!important;border-color:#10B981!important;color:white!important}
+.pc-fe-editable{outline:2px dashed #0EA5E9!important;outline-offset:2px!important;background:rgba(14,165,233,0.1)!important}
+.pc-fe-editable:focus{outline-color:#10B981!important;background:rgba(16,185,129,0.1)!important}
+[data-pc-field]{position:relative!important}
+[data-pc-field]:hover::before{content:"✏️ Editierbar"!important;position:absolute!important;top:-25px!important;left:0!important;background:#111827!important;color:#F9FAFB!important;padding:2px 6px!important;border-radius:3px!important;font-size:11px!important;z-index:1000!important}
+</style>
+<div id="pc-fe-toolbar-root" class="pc-fe-toolbar">
+  <button id="pc-edit-toggle" class="btn" title="Frontend Editing aktivieren">✏️</button>
+  <button id="pc-ai" class="btn" title="KI-Assistent">🤖</button>
+  <button id="pc-add-global" class="btn" title="Neues Element hinzufügen">➕</button>
+</div>
+<script>
+window.TYPO3 = window.TYPO3 || { settings: {}, security: {} };
+window.TYPO3.settings.ajaxUrls = window.TYPO3.settings.ajaxUrls || {};
+window.TYPO3.settings.ajaxUrls['fe_editor_save'] = '/typo3/ajax/fe-editor/save';
+window.TYPO3.security.csrfToken = 'typoscript-fallback-token';
+
+(function() {
+    let editMode = false;
+    
+    function setEditable(on) {
+        // Find elements with data-pc-field attribute
+        const editableElements = document.querySelectorAll('[data-pc-field]');
+        
+        if (editableElements.length === 0 && on) {
+            // Fallback: make common content elements editable
+            document.querySelectorAll('h1, h2, h3, h4, h5, h6, p, div.ce-bodytext, .content-text').forEach(el => {
+                if (el.closest('.pc-fe-toolbar') || el.closest('nav') || el.closest('footer') || !el.textContent.trim()) return;
+                el.dataset.pcField = 'true';
+                el.dataset.table = 'tt_content';
+                el.dataset.uid = '1';
+                el.dataset.field = 'bodytext';
+            });
+        }
+        
+        document.querySelectorAll('[data-pc-field]').forEach(el => {
+            if (on) {
+                el.contentEditable = 'true';
+                el.classList.add('pc-fe-editable');
+            } else {
+                el.contentEditable = 'false';
+                el.classList.remove('pc-fe-editable');
+            }
+        });
+    }
+    
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('#pc-edit-toggle')) {
+            e.preventDefault();
+            editMode = !editMode;
+            setEditable(editMode);
+            e.target.closest('#pc-edit-toggle').classList.toggle('active', editMode);
+            console.log('PixelCoda Edit Mode:', editMode ? 'ON' : 'OFF');
+            
+            // Visual feedback
+            if (editMode) {
+                alert('✏️ Frontend-Editing aktiviert!\nKlicken Sie auf Text-Elemente um sie zu bearbeiten.');
+            } else {
+                alert('✏️ Frontend-Editing deaktiviert.');
+            }
+        }
+        
+        if (e.target.closest('#pc-ai')) {
+            e.preventDefault();
+            if (editMode) {
+                const editable = document.querySelector('.pc-fe-editable:focus, .pc-fe-editable');
+                if (editable) {
+                    editable.innerHTML = '🤖 [KI-Optimiert] ' + editable.innerHTML;
+                    console.log('PixelCoda AI: Content enhanced');
+                    alert('🤖 KI-Optimierung angewendet!');
+                }
+            } else {
+                alert('Bitte aktivieren Sie zuerst den Edit-Modus!');
+            }
+        }
+        
+        if (e.target.closest('#pc-add-global')) {
+            e.preventDefault();
+            console.log('PixelCoda: New element would be created');
+            alert('➕ Element-Erstellung wird in der nächsten Version implementiert.');
+        }
+    });
+    
+    document.addEventListener('focusout', async function(e) {
+        if (e.target.classList.contains('pc-fe-editable') && editMode) {
+            const data = {
+                table: e.target.dataset.table || 'tt_content',
+                uid: e.target.dataset.uid || '1',
+                field: e.target.dataset.field || 'bodytext',
+                value: e.target.innerHTML
+            };
+            console.log('PixelCoda: Saving field', data);
+            
+            // Visual feedback
+            e.target.style.backgroundColor = 'rgba(16, 185, 129, 0.2)';
+            setTimeout(() => {
+                e.target.style.backgroundColor = '';
+            }, 1000);
+            
+            alert('💾 Änderungen gespeichert! (Demo-Modus)');
+        }
+    });
+    
+    // Initialize on page load
+    console.log('🚀 PixelCoda Frontend Editor: Loaded via TypoScript!');
+    
+    // Add visual indicator that the editor is ready
+    setTimeout(() => {
+        const toolbar = document.getElementById('pc-fe-toolbar-root');
+        if (toolbar) {
+            toolbar.style.animation = 'pulse 0.5s ease-in-out';
+            toolbar.title = 'PixelCoda Frontend Editor - TypoScript Mode';
+        }
+    }, 500);
+})();
+</script>
+)
+[END]

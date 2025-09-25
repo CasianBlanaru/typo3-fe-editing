@@ -7,6 +7,11 @@ return [
             'className' => 'TYPO3\\CMS\\Core\\Crypto\\PasswordHashing\\Argon2iPasswordHash',
             'options' => [],
         ],
+        'AJAX' => [
+            'fe_editor_save' => [
+                'callbackMethod' => 'PixelCoda\\FeEditor\\Api\\SaveController::handle'
+            ],
+        ],
     ],
     'DB' => [
         'Connections' => [
@@ -59,6 +64,12 @@ return [
         'passwordHashing' => [
             'className' => 'TYPO3\\CMS\\Core\\Crypto\\PasswordHashing\\Argon2iPasswordHash',
             'options' => [],
+        ],
+        'middlewares' => [
+            'pixelcoda/fe-editor-overlay' => [
+                'target' => 'PixelCoda\\FeEditor\\Middleware\\FrontendEditOverlay',
+                'after' => ['typo3/cms-frontend/tsfe'],
+            ],
         ],
     ],
     'GFX' => [

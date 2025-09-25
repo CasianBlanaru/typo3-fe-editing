@@ -1,0 +1,127 @@
+[backend.user.isLoggedIn && (traverse(request.getQueryParams(), 'fe_edit') == 1 || traverse(request.getQueryParams(), 'route') matches '#^/ajax/frontend-editing/#')]
+  lib.fluidContent {
+    stdWrap {
+      editIcons = tt_content:header
+    }
+  }
+
+  lib.contentElement.stdWrap < lib.fluidContent.stdWrap
+
+  tt_content.bullets.stdWrap < lib.fluidContent.stdWrap
+  tt_content.div.stdWrap < lib.fluidContent.stdWrap
+  tt_content.header.stdWrap < lib.fluidContent.stdWrap
+  tt_content.html.stdWrap < lib.fluidContent.stdWrap
+  tt_content.image.stdWrap < lib.fluidContent.stdWrap
+  tt_content.list.stdWrap < lib.fluidContent.stdWrap
+  tt_content.menu_abstract.stdWrap < lib.fluidContent.stdWrap
+  tt_content.menu_categorized_pages.stdWrap < lib.fluidContent.stdWrap
+  tt_content.menu_pages.stdWrap < lib.fluidContent.stdWrap
+  tt_content.menu_recently_updated.stdWrap < lib.fluidContent.stdWrap
+  tt_content.menu_related_pages.stdWrap < lib.fluidContent.stdWrap
+  tt_content.menu_section.stdWrap < lib.fluidContent.stdWrap
+  tt_content.menu_section_pages.stdWrap < lib.fluidContent.stdWrap
+  tt_content.menu_sitemap.stdWrap < lib.fluidContent.stdWrap
+  tt_content.menu_sitemap_pages.stdWrap < lib.fluidContent.stdWrap
+  tt_content.menu_subpages.stdWrap < lib.fluidContent.stdWrap
+  tt_content.shortcut.stdWrap < lib.fluidContent.stdWrap
+  tt_content.table.stdWrap < lib.fluidContent.stdWrap
+  tt_content.text.stdWrap < lib.fluidContent.stdWrap
+  tt_content.textmedia.stdWrap < lib.fluidContent.stdWrap
+  tt_content.textpic.stdWrap < lib.fluidContent.stdWrap
+  tt_content.uploads.stdWrap < lib.fluidContent.stdWrap
+  tt_content.mailform.stdWrap < lib.fluidContent.stdWrap
+
+  config {
+    # Disable spam protection
+    spamProtectEmailAddresses = 0
+
+    tx_frontendediting {
+      # Catch-all processing before a field value is persisted to database. Key (e.g. "bronly") is the RTE configuration
+      # name, set in a field's TCA config (richtextConfiguration or frontendRichtextConfiguration).
+      contentPersistPreProcessingPatterns {
+        bronly {
+          replacement {
+            10 {
+              search.char = 13
+              replace =
+            }
+
+            20 {
+              search.char = 10
+              replace =
+            }
+
+            30 {
+              search = #<br\s*\/?>#i
+              replace.char = 10
+              useRegExp = 1
+            }
+          }
+        }
+
+        listonly {
+          replacement {
+            10 {
+              search.char = 13
+              replace =
+            }
+
+            20 {
+              search.char = 10
+              replace =
+            }
+
+            30 {
+              search = #\s+#
+              replace.char = 32
+              useRegExp = 1
+            }
+
+            40 {
+              search = #</li>#i
+              replace {
+                char = 10
+                wrap = </li>|
+              }
+              useRegExp = 1
+            }
+
+            50 {
+              search = #<li[^>]*>([^<]+)</li>#i
+              replace = ${1}
+              useRegExp = 1
+            }
+          }
+        }
+      }
+
+      # Example processing of content before it is being persisted to database. For all types, use <type> = *
+      #      contentPersistPreProcessing {
+      #        <tableName> {
+      #          <type> {
+      #            <field> {
+      #              # Any stdWrap property
+      #            }
+      #          }
+      #        }
+      #      }
+
+      customRecordEditing {
+        tx_news_pi1 {
+          actionName = detail
+          recordName = news
+          tableName = tx_news_domain_model_news
+          listTypeName = news_pi1
+        }
+      }
+
+      # Name of the field that stores the uid of the parent of nested CEs
+      # used to add a drop zone before the first nested CEs in a column of a container.
+      # Configured as default for EXT:container
+      parentOfCeUidField = tx_container_parent
+    }
+  }
+
+  # Prevent HTML output for wrapContent to be rendered as string only
+  lib.parseFunc_RTE.nonTypoTagStdWrap.encapsLines >
+[global]

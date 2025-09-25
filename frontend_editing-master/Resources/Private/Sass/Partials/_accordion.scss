@@ -1,0 +1,15 @@
+.accordion {
+    border-top: 1px solid $t3-gray-divider;
+    text-align: left;
+}
+
+.accordion-content {
+    padding: 0;
+    display: none;
+    background-color: $t3-gray;
+    border-top: 1px solid $t3-gray-divider;
+
+    &.show {
+        display: block;
+    }
+}

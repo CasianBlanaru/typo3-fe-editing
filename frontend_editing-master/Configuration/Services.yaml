@@ -1,0 +1,29 @@
+services:
+  _defaults:
+    autowire: true
+    autoconfigure: true
+    public: false
+
+  TYPO3\CMS\FrontendEditing\:
+    resource: '../Classes/*'
+
+  TYPO3\CMS\FrontendEditing\Controller\FrontendEditingModuleController:
+    tags: ['backend.controller']
+
+  TYPO3\CMS\FrontendEditing\Controller\ReceiverController:
+    public: true
+
+  TYPO3\CMS\FrontendEditing\Backend\Controller\ContentElement\NewContentElementController:
+    public: true
+
+  TYPO3\CMS\FrontendEditing\Controller\Event\Handler\TypoScriptPrepareFieldUpdateEventHandler:
+    tags:
+      - name: event.listener
+        identifier: typoScriptPrepareFieldUpdate
+        event: TYPO3\CMS\FrontendEditing\Controller\Event\PrepareFieldUpdateEvent
+
+  TYPO3\CMS\FrontendEditing\Controller\Event\Handler\BootCompletedEventHandler:
+    tags:
+      - name: event.listener
+        identifier: bootCompletedEventHandler
+        event: TYPO3\CMS\Core\Core\Event\BootCompletedEvent

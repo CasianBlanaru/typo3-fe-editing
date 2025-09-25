@@ -1,0 +1,72 @@
+// Colors
+$orange-primary: #ff8700;
+$t3-gray: #eee;
+$t3-gray-divider: #c3c3c3;
+$gray-dark: #191919;
+$gray: #4c4c4c;
+$gray-light: #838383;
+$gray-bright: #efefef;
+$gray-mid: #737373;
+
+$gray-icon-bg: #555f63;
+$black: #0f0f0f;
+$white: #fff;
+
+$scroll-bar-color: #3f3f3f;
+$scroll-bar-track: rgba(63, 63, 63, 0.6);
+
+$transparent-opacity: rgba(30, 30, 30, 0.9);
+
+// Font
+$font-family-base: Verdana, Arial, Helvetica, sans-serif;
+
+$font-family-user-input: $font-family-base;
+
+$font-size-smaller: 12px;
+$font-size-small: 14px;
+$font-size-regular: 16px;
+$font-size-large: 18px;
+
+/* Toolbars */
+
+// Header top
+$header-top-bg-color: $black;
+
+// Right bar
+$right-bar-width: 325px;
+
+// DropZones
+$drop-zone-bg-color: rgba(167, 215, 255, 1);
+$drop-zone-enabled-height: 25px;
+$drop-zone-active-height: 60px;
+$drop-zone-active-border-color: rgba(0, 145, 210, 1);
+
+// Modal
+$modal-background-color: rgba(255, 255, 255, 0.5);
+
+// Timing
+$push-duration: 0.2s;
+$push-timing: linear;
+
+$fade-duration: 0.2s;
+$fade-timing: linear;
+
+// Extra space
+$twenty: 20px;
+
+// shadows
+$focus-shadow: 0 0 0 2px transparentize($gray-darker, 0.1);
+$focus-shadow-sm: 0 0 0 1px transparentize($gray-darker, 0.1);
+
+// scroll area
+$scroll-area-max-height: 100px;
+$scroll-area-min-height: 50px;
+$scroll-area-height: 8%;
+
+$scroll-area-arrow-size: 20px;
+$scroll-area-arrow-color: rgba(255, 255, 255, 0.8);
+$scroll-area-arrow-width: 8px;
+$scroll-area-arrow-color--hover: white;
+
+$scroll-area-arrow-transition-time: 250ms;
+$scroll-area-arrow-transition-function: ease;

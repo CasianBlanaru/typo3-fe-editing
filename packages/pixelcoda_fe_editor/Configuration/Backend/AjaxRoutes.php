@@ -5,8 +5,9 @@ use PixelCoda\FeEditor\Api\SaveController;
 
 return [
     'fe_editor_save' => [
-        'path'   => '/fe-editor/save',
+        'path'   => '/ajax/fe-editor/save',
         'target' => SaveController::class . '::handle',
-        'access' => 'csrfToken', // BE-Auth + CSRF
+        'access' => 'user,group', // Backend user required
+        'methods' => ['POST'],
     ],
 ];

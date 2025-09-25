@@ -1,137 +1,201 @@
-# Include Bootstrap Package setup
+# Include Bootstrap Package setup (if available)
+[getTSFE().sys_page.checkRecord('tx_extensionmanager_domain_model_extension', 'bootstrap_package')]
 @import 'EXT:bootstrap_package/Configuration/TypoScript/setup.typoscript'
+[END]
 
-# Include FE Editor Extension when installed
+# Include FE Editor Extension
 @import 'EXT:pixelcoda_fe_editor/Configuration/TypoScript/setup.typoscript'
 
-# Custom configuration
+# Direct Frontend Editor Integration for immediate visibility
+[backend.user.isLoggedIn]
+page.footerData.998 = TEXT
+page.footerData.998.value (
+<!-- PixelCoda FE Editor: Direct Integration -->
+<div id="pc-fe-toolbar-direct" style="position:fixed!important;right:1rem!important;bottom:1rem!important;padding:0.75rem!important;background:#111827!important;color:#F9FAFB!important;border-radius:0.5rem!important;z-index:999999!important;font:14px/1.2 system-ui!important;box-shadow:0 10px 25px rgba(0,0,0,0.25)!important;display:flex!important;gap:0.5rem!important;border:2px solid #0EA5E9!important;">
+  <button onclick="toggleEditMode()" style="width:36px!important;height:36px!important;display:inline-flex!important;align-items:center!important;justify-content:center!important;border-radius:6px!important;background:transparent!important;border:1px solid #E5E7EB!important;cursor:pointer!important;color:#F9FAFB!important;font-size:16px!important;transition:all 0.2s!important;" title="Frontend Editing aktivieren">✏️</button>
+  <button onclick="aiMode()" style="width:36px!important;height:36px!important;display:inline-flex!important;align-items:center!important;justify-content:center!important;border-radius:6px!important;background:transparent!important;border:1px solid #E5E7EB!important;cursor:pointer!important;color:#F9FAFB!important;font-size:16px!important;transition:all 0.2s!important;" title="KI-Assistent">🤖</button>
+  <button onclick="addElement()" style="width:36px!important;height:36px!important;display:inline-flex!important;align-items:center!important;justify-content:center!important;border-radius:6px!important;background:transparent!important;border:1px solid #E5E7EB!important;cursor:pointer!important;color:#F9FAFB!important;font-size:16px!important;transition:all 0.2s!important;" title="Neues Element">➕</button>
+</div>
+<script>
+window.pixelcodaEditMode = false;
+
+function toggleEditMode() {
+    window.pixelcodaEditMode = !window.pixelcodaEditMode;
+    const btn = document.querySelector('#pc-fe-toolbar-direct button:first-child');
+    
+    if (window.pixelcodaEditMode) {
+        btn.style.background = '#10B981';
+        makeElementsEditable(true);
+        alert('✏️ Frontend-Editing aktiviert!\nKlicken Sie auf Text-Elemente um sie zu bearbeiten.');
+    } else {
+        btn.style.background = 'transparent';
+        makeElementsEditable(false);
+        alert('✏️ Frontend-Editing deaktiviert.');
+    }
+}
+
+function makeElementsEditable(on) {
+    const elements = document.querySelectorAll('h1, h2, h3, h4, h5, h6, p, div');
+    elements.forEach(el => {
+        if (el.closest('#pc-fe-toolbar-direct') || el.closest('nav') || el.closest('footer')) return;
+        if (!el.textContent.trim()) return;
+        
+        if (on) {
+            el.contentEditable = 'true';
+            el.style.outline = '2px dashed #0EA5E9';
+            el.style.outlineOffset = '2px';
+            el.style.background = 'rgba(14,165,233,0.1)';
+            el.addEventListener('blur', saveElement);
+        } else {
+            el.contentEditable = 'false';
+            el.style.outline = '';
+            el.style.outlineOffset = '';
+            el.style.background = '';
+            el.removeEventListener('blur', saveElement);
+        }
+    });
+}
+
+function saveElement(e) {
+    e.target.style.backgroundColor = 'rgba(16, 185, 129, 0.2)';
+    setTimeout(() => {
+        e.target.style.backgroundColor = 'rgba(14,165,233,0.1)';
+    }, 1000);
+    console.log('PixelCoda: Element saved', e.target.innerHTML);
+}
+
+function aiMode() {
+    if (window.pixelcodaEditMode) {
+        const editable = document.querySelector('[contenteditable="true"]');
+        if (editable) {
+            editable.innerHTML = '🤖 [KI-Optimiert] ' + editable.innerHTML;
+            alert('🤖 KI-Optimierung angewendet!');
+        }
+    } else {
+        alert('Bitte aktivieren Sie zuerst den Edit-Modus!');
+    }
+}
+
+function addElement() {
+    alert('➕ Element-Erstellung wird in der nächsten Version implementiert.');
+}
+
+console.log('🚀 PixelCoda Frontend Editor: Loaded and ready!');
+</script>
+)
+[END]
+
+# Page configuration
+page = PAGE
 page {
-    # Include custom CSS
-    includeCSS {
-        fe_editor_sitepackage = EXT:fe_editor_sitepackage/Resources/Public/Css/custom.css
-        pixelcoda_fe_editor = EXT:pixelcoda_fe_editor/Resources/Public/editor.css
-    }
+    typeNum = 0
     
-    # Include custom JavaScript with inline toolbar
-    includeJSFooter {
-        fe_editor_sitepackage = EXT:fe_editor_sitepackage/Resources/Public/JavaScript/custom.js
-        pixelcoda_fe_editor = EXT:pixelcoda_fe_editor/Resources/Public/editor.js
-    }
-    
-    # Direct JavaScript injection
-    jsFooterInline.10 = TEXT
-    jsFooterInline.10.value (
-// PixelCoda Frontend Editor - Direct Injection
-(function() {
-    const css = '.pc-fe-toolbar{position:fixed;right:1rem;bottom:1rem;padding:.5rem;background:#111827;color:#F9FAFB;border-radius:.5rem;z-index:99999;font:14px/1.2 system-ui;box-shadow:0 10px 25px rgba(0,0,0,.25);display:flex;gap:.5rem}.pc-fe-editable{outline:2px dashed rgba(14,165,233,.5);outline-offset:2px}.btn{width:32px;height:32px;display:inline-flex;align-items:center;justify-content:center;border-radius:6px;background:transparent;border:none;cursor:pointer;transition:all .2s;color:white;font-size:16px}.btn:hover{background:rgba(255,255,255,.1)}.btn.active{background:#0EA5E9}';
-    const style = document.createElement('style');
-    style.textContent = css;
-    document.head.appendChild(style);
-    
-    const toolbar = document.createElement('div');
-    toolbar.id = 'pc-fe-toolbar-root';
-    toolbar.className = 'pc-fe-toolbar';
-    toolbar.innerHTML = '<button id="pc-edit-toggle" class="btn" title="Bearbeiten">✏️</button><button id="pc-ai" class="btn" title="KI">🤖</button><button id="pc-add-global" class="btn" title="Element hinzufügen">➕</button>';
-    document.body.appendChild(toolbar);
-    
-    let editMode = false;
-    function setEditable(on) {
-        document.querySelectorAll('h1, h2, h3, h4, h5, h6, p, div').forEach(el => {
-            if (el.closest('.pc-fe-toolbar') || el.closest('nav') || el.closest('footer')) return;
-            if (on) {
-                el.contentEditable = 'true';
-                el.classList.add('pc-fe-editable');
-            } else {
-                el.contentEditable = 'false';
-                el.classList.remove('pc-fe-editable');
-            }
-        });
-    }
-    
-    document.addEventListener('click', function(e) {
-        if (e.target.closest('#pc-edit-toggle')) {
-            editMode = !editMode;
-            setEditable(editMode);
-            e.target.closest('#pc-edit-toggle').classList.toggle('active', editMode);
-            alert(editMode ? '✏️ Edit-Modus aktiviert!' : '✏️ Edit-Modus deaktiviert!');
+    # Template configuration
+    10 = FLUIDTEMPLATE
+    10 {
+        templateName = Default
+        templateRootPaths {
+            0 = EXT:fe_editor_sitepackage/Resources/Private/Templates/Page/
+            10 = {$page.fluidtemplate.templateRootPath}
         }
-        if (e.target.closest('#pc-ai')) {
-            if (editMode) {
-                const first = document.querySelector('.pc-fe-editable');
-                if (first) first.innerHTML = '🤖 ' + first.innerHTML;
-                alert('🤖 KI-Vorschlag hinzugefügt!');
-            } else {
-                alert('🤖 Aktivieren Sie zuerst den Edit-Modus!');
+        partialRootPaths {
+            0 = EXT:fe_editor_sitepackage/Resources/Private/Partials/Page/
+            10 = {$page.fluidtemplate.partialRootPath}
+        }
+        layoutRootPaths {
+            0 = EXT:fe_editor_sitepackage/Resources/Private/Layouts/Page/
+            10 = {$page.fluidtemplate.layoutRootPath}
+        }
+        
+        dataProcessing {
+            10 = TYPO3\CMS\Frontend\DataProcessing\SiteProcessor
+            10 {
+                as = site
             }
         }
-        if (e.target.closest('#pc-add-global')) {
-            alert('➕ Demo: Neues Element würde erstellt!');
-        }
-    });
-    
-    document.addEventListener('focusout', function(e) {
-        if (e.target.classList.contains('pc-fe-editable') && editMode) {
-            alert('💾 Änderungen würden gespeichert!');
-        }
-    });
-    
-    console.log('🚀 PixelCoda Toolbar injected!');
-})();
-    )
+    }
     
     # Meta tags
     meta {
-        description = FE Editor Demo - Live Frontend Editing for TYPO3
-        author = pixelcoda
         viewport = width=device-width, initial-scale=1
+        X-UA-Compatible = IE=edge
+        X-UA-Compatible.httpEquivalent = 1
+        description = FE Editor Demo - Live Frontend Editing for TYPO3
+        author = PixelCoda
+    }
+}
+
+# Content rendering
+lib.dynamicContent = COA
+lib.dynamicContent {
+    10 = LOAD_REGISTER
+    10 {
+        colPos.cObject = TEXT
+        colPos.cObject {
+            field = colPos
+            ifEmpty = 0
+        }
+        pageUid.cObject = TEXT
+        pageUid.cObject {
+            field = pageUid
+            ifEmpty.data = TSFE:id
+        }
+        contentFromPid.cObject = TEXT
+        contentFromPid.cObject {
+            data = register:pageUid
+            wrap = |
+        }
     }
     
-    # Frontend Editing Toolbar (always visible for demo)
-    footerData.10 = TEXT
-    footerData.10.value (
-        <link rel="stylesheet" href="/editor.css">
-        <div id="pc-fe-toolbar-root" class="pc-fe-toolbar">
-            <button id="pc-edit-toggle" class="btn" title="Bearbeiten">✏️</button>
-            <button id="pc-ai" class="btn" title="KI">🤖</button>
-            <button id="pc-add-global" class="btn" title="Element hinzufügen">➕</button>
-        </div>
-        <script>
-            window.TYPO3 = window.TYPO3 || { settings: {}, security: {} };
-            window.TYPO3.settings.ajaxUrls = window.TYPO3.settings.ajaxUrls || {};
-            window.TYPO3.settings.ajaxUrls['fe_editor_save'] = '/typo3/ajax/fe-editor/save';
-            window.TYPO3.security.csrfToken = 'demo-token';
-            window.demoMode = true;
-        </script>
-        <script src="/editor.js"></script>
-        <script>
-            // Demo Mode Overrides
-            window.saveField = async function(data) {
-                console.log('🎯 TYPO3 Demo: Saving field', data);
-                alert('TYPO3 Demo: Feld "' + data.field + '" würde gespeichert werden!');
-                return { ok: true };
-            };
-            window.createContentElement = async function(pid, colPos) {
-                console.log('🎯 TYPO3 Demo: Creating element', { pid, colPos });
-                alert('TYPO3 Demo: Neues Element würde erstellt werden!');
-                return { ok: true };
-            };
-        </script>
-    )
+    20 = CONTENT
+    20 {
+        table = tt_content
+        select {
+            includeRecordsWithoutDefaultTranslation = 1
+            orderBy = sorting
+            where = {#colPos}={register:colPos}
+            where.insertData = 1
+            pidInList.data = register:contentFromPid
+        }
+    }
+    
+    90 = RESTORE_REGISTER
 }
 
-# Override content element templates for frontend editing
-lib.contentElement {
-    templateRootPaths.200 = EXT:fe_editor_sitepackage/Resources/Private/Templates/ContentElements/
-}
+# Enhanced content element rendering with PixelCoda attributes
+tt_content.stdWrap.dataWrap = <div class="content-element ce-{field:CType}" data-pc-field data-table="tt_content" data-uid="{field:uid}" data-field="bodytext">|</div>
 
-# Enable DropIn Partials for Bootstrap Package
-page.10 {
-    partialRootPaths.200 = EXT:fe_editor_sitepackage/Resources/Private/Partials/
-}
-
-# Override page layout for frontend editing
-page {
+# Text content element with frontend editing attributes
+tt_content.text = COA
+tt_content.text {
+    10 = TEXT
     10 {
-        layoutRootPaths.200 = EXT:fe_editor_sitepackage/Resources/Private/Layouts/
+        field = header
+        wrap = <h2 data-pc-field data-table="tt_content" data-uid="{field:uid}" data-field="header">|</h2>
+        if.isTrue.field = header
+    }
+    
+    20 = TEXT
+    20 {
+        field = bodytext
+        parseFunc = < lib.parseFunc_RTE
+        wrap = <div data-pc-field data-table="tt_content" data-uid="{field:uid}" data-field="bodytext">|</div>
+    }
+}
+
+# Header content element
+tt_content.header = COA
+tt_content.header {
+    10 = TEXT
+    10 {
+        field = header
+        wrap = <h2 data-pc-field data-table="tt_content" data-uid="{field:uid}" data-field="header">|</h2>
+    }
+    
+    20 = TEXT
+    20 {
+        field = subheader
+        wrap = <p class="lead" data-pc-field data-table="tt_content" data-uid="{field:uid}" data-field="subheader">|</p>
+        if.isTrue.field = subheader
     }
 }

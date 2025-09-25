@@ -6,22 +6,31 @@ use TYPO3\CMS\Core\Http\JsonResponse;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Core\DataHandling\DataHandler;
 use TYPO3\CMS\Core\FormProtection\FormProtectionFactory;
+use TYPO3\CMS\Core\EventDispatcher\EventDispatcher;
+use TYPO3\CMS\Backend\Utility\BackendUtility;
+use PixelCoda\FeEditor\Event\BeforeSaveEvent;
+use PixelCoda\FeEditor\Event\AfterSaveEvent;
 
 final class SaveController
 {
     public function handle(ServerRequestInterface $request): JsonResponse
     {
-        // 0) Security
-        $beUser = $GLOBALS['BE_USER'] ?? null;
-        if (!$beUser) {
-            return new JsonResponse(['error' => 'auth_required'], 401);
-        }
-        $parsed = $request->getParsedBody() ?? [];
-        $token  = (string)($parsed['token'] ?? '');
-        $fp = FormProtectionFactory::get();
-        if (!$fp->validateToken($token, 'pixelcoda-fe-editor', 'fe-editor-action')) {
-            return new JsonResponse(['error' => 'invalid_token'], 403);
-        }
+        try {
+            // 0) Security - Backend User Check
+            $beUser = $GLOBALS['BE_USER'] ?? null;
+            if (!$beUser || !$beUser->user) {
+                return new JsonResponse(['error' => 'auth_required', 'message' => 'Backend user authentication required'], 401);
+            }
+            
+            // Parse request data
+            $parsed = $request->getParsedBody() ?? [];
+            $token  = (string)($parsed['token'] ?? '');
+            
+            // CSRF Token validation
+            $fp = FormProtectionFactory::get();
+            if (!$fp->validateToken($token, 'pixelcoda-fe-editor', 'fe-editor-action')) {
+                return new JsonResponse(['error' => 'invalid_token', 'message' => 'CSRF token validation failed'], 403);
+            }
 
         // 1) Whitelist + Rights
         $allowedTables = [
@@ -43,7 +52,18 @@ final class SaveController
             if (!$beUser->isAdmin() && !$beUser->check('tables_modify', $table)) {
                 return new JsonResponse(['error' => 'no_modify_permission'], 403);
             }
-            $data[$table][$uid] = [$field => $value];
+            
+            // Get current record for event
+            $record = BackendUtility::getRecord($table, (int)$uid) ?: [];
+            
+            // Dispatch BeforeSaveEvent to allow content modification
+            $eventDispatcher = GeneralUtility::makeInstance(EventDispatcher::class);
+            $beforeSaveEvent = new BeforeSaveEvent($table, $field, $value, (int)$uid, $record);
+            $eventDispatcher->dispatch($beforeSaveEvent);
+            
+            // Use potentially modified content from event
+            $finalValue = $beforeSaveEvent->getContent();
+            $data[$table][$uid] = [$field => $finalValue];
         }
 
         if ($rawData) {
@@ -88,14 +108,34 @@ final class SaveController
         $dh->process_datamap();
         $dh->process_cmdmap();
 
-        if (!empty($dh->errorLog)) {
-            return new JsonResponse(['ok' => false, 'errors' => $dh->errorLog], 400);
-        }
+            if (!empty($dh->errorLog)) {
+                return new JsonResponse([
+                    'ok' => false, 
+                    'error' => 'datahandler_errors',
+                    'errors' => $dh->errorLog,
+                    'message' => 'DataHandler processing failed'
+                ], 400);
+            }
 
-        $result = [
-            'ok' => true,
-            'copymap' => property_exists($dh, 'copyMappingArray_merged') ? $dh->copyMappingArray_merged : [],
-        ];
-        return new JsonResponse($result, 200);
+            // Dispatch AfterSaveEvent for post-processing
+            if ($table && $field !== '') {
+                $afterSaveEvent = new AfterSaveEvent($table, $field, $finalValue, (int)$uid, $record, true);
+                $eventDispatcher->dispatch($afterSaveEvent);
+            }
+
+            $result = [
+                'ok' => true,
+                'message' => 'Data saved successfully',
+                'copymap' => property_exists($dh, 'copyMappingArray_merged') ? $dh->copyMappingArray_merged : [],
+            ];
+            return new JsonResponse($result, 200);
+            
+        } catch (\Exception $e) {
+            return new JsonResponse([
+                'ok' => false,
+                'error' => 'exception',
+                'message' => 'An error occurred: ' . $e->getMessage()
+            ], 500);
+        }
     }
 }
