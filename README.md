@@ -1,66 +1,159 @@
-# TYPO3 CMS Base Distribution
+# PixelCoda FE Editor
 
-Get going quickly with TYPO3 CMS.
+A modern frontend editor for TYPO3 with AI integration and beautiful UI.
 
-## Prerequisites
+## Features
 
-* PHP 8.2
-* [Composer](https://getcomposer.org/download/)
+- **Frontend Editing**: Edit content directly on the frontend with a modern toolbar
+- **AI Integration**: Built-in AI suggestions and content generation
+- **Modern UI**: Dark theme with smooth animations and responsive design
+- **Security**: CSRF protection and permission-based access control
+- **Extensible**: Plugin architecture for AI providers and custom functionality
 
-## Quickstart
+## Installation
 
-* `composer create-project typo3/cms-base-distribution project-name ^13`
-* `cd project-name`
+1. Install the extension via Composer:
+   ```bash
+   composer require pixelcoda/fe-editor
+   ```
 
-Note that this distribution installs most, but not all of the TYPO3 CMS core extensions.
-Depending on your need you might also want to install other TYPO3 extensions from
-[packagist.org](https://packagist.org/?type=typo3-cms-framework).
+2. Activate the extension in the TYPO3 backend
 
-### Setup
+3. Include the static TypoScript "PixelCoda FE Editor Demo"
 
-To start an interactive installation, you can do so by executing the following
-command and then follow the wizard:
+4. Create a new content element "PixelCoda Demo (editable)"
 
-```bash
-composer exec typo3 setup
+## Usage
+
+### Basic Setup
+
+1. **Activate Extension**: Go to Admin Tools → Extensions and activate "PixelCoda FE Editor"
+
+2. **Include TypoScript**: In your root page template, include the static TypoScript "PixelCoda FE Editor Demo"
+
+3. **Create Demo Content**: Add a new content element and select "PixelCoda Demo (editable)"
+
+4. **Frontend Editing**: As a backend user, visit the frontend page to see the editing toolbar
+
+### Frontend Editor
+
+The frontend editor provides three main functions:
+
+- **Edit Button**: Toggle content editing mode for fields marked with `data-pc-field`
+- **AI Button**: Apply AI suggestions to editable content
+- **Add Button**: Create new content elements from the frontend
+
+### Content Element Structure
+
+The demo content element includes:
+
+- **Header**: Editable title field
+- **Subheader**: Editable subtitle field  
+- **Body Text**: Rich text content with RTE
+- **Dropzone**: Area for adding new elements
+
+## Configuration
+
+### Permissions
+
+The extension respects TYPO3's permission system:
+
+- **Admin users**: Full access to all features
+- **Regular users**: Requires `tables_modify` permission for `tt_content`
+
+### AI Providers
+
+The extension includes a plugin architecture for AI providers:
+
+- **NullProvider**: Demo provider that adds "[KI Vorschlag]" prefix
+- **Future providers**: OpenAI, local models, etc.
+
+### Customization
+
+#### Adding Custom Fields
+
+To make additional fields editable:
+
+1. Add `data-pc-field` attribute to HTML elements
+2. Include `data-pc-table` and `data-pc-uid` attributes
+3. Update the whitelist in `SaveController.php`
+
+#### Styling
+
+The extension includes modern CSS with:
+
+- Dark theme toolbar (`#111827`)
+- Smooth animations and transitions
+- Responsive design for mobile devices
+- Custom notification system
+
+## Development
+
+### Extension Structure
+
+```
+Classes/
+├── Ai/                    # AI provider interfaces
+├── Configuration/         # Ajax routes and icons
+├── Controller/           # Save controller
+├── Middleware/          # Frontend overlay middleware
+└── Service/             # Permission and token services
+
+Resources/
+├── Public/
+│   ├── CSS/             # Frontend styles
+│   ├── Icons/           # SVG icons
+│   └── JavaScript/      # Frontend editor
+└── Private/
+    └── Templates/       # Fluid templates
 ```
 
-### Setup unattended (optional)
+### Adding AI Providers
 
-If you're a more advanced user, you might want to leverage the unattended installation.
-To do this, you need to execute the following command and substitute the arguments
-with your own environment configuration.
+1. Implement `AiProviderInterface`
+2. Register in `AiService`
+3. Configure in extension settings
 
-```bash
-export TYPO3_SETUP_ADMIN_PASSWORD=$(tr -dc "_A-Za-z0-9#=$()/" < /dev/urandom | head -c24)
-composer exec -- typo3 setup \
-    --no-interaction \
-    --server-type=other \
-    --driver=sqlite \
-    --admin-username=admin \
-    --admin-email="info@example.com" \
-    --project-name="My TYPO3 Project" \
-    --create-site="http://localhost:8000/"
-echo "Admin password: ${TYPO3_SETUP_ADMIN_PASSWORD}"
-```
+### Custom Content Types
 
-### Development server
+1. Add TCA configuration in `ext_tables.php`
+2. Create Fluid template
+3. Add TypoScript mapping
+4. Register in PageTS wizard
 
-While it's advised to use a more sophisticated web server such as
-Apache 2 or Nginx, you can instantly run the project by using PHPs` built-in
-[web server](https://secure.php.net/manual/en/features.commandline.webserver.php).
+## Roadmap
 
-* `TYPO3_CONTEXT=Development php -S localhost:8000 -t public`
-* open your browser at "http://localhost:8000"
+### Planned Features
 
-Please be aware that the built-in web server is single threaded and only meant
-to be used for development.
+- **Move/Copy/Delete**: Frontend content management
+- **AI Configuration**: API key management in extension settings
+- **Theme Switch**: Light/dark mode toggle
+- **Content Blocks**: Registry for additional tables/fields
+- **Real AI Integration**: OpenAI, Anthropic, local models
 
-##  Next steps
+### Future Enhancements
 
-* [Getting Started with TYPO3](https://docs.typo3.org/permalink/t3start:start)
-* [Create a Site Package](https://docs.typo3.org/permalink/t3sitepackage:start)
+- **Collaborative Editing**: Real-time multi-user editing
+- **Version History**: Track content changes
+- **Workflow Integration**: Approval processes
+- **Performance Optimization**: Lazy loading and caching
+
+## Support
+
+For support and feature requests, please contact:
+
+- **Email**: info@pixelcoda.com
+- **Website**: https://pixelcoda.com
 
 ## License
 
-GPL-2.0 or later
+GPL-2.0-or-later
+
+## Changelog
+
+### v1.0.0
+- Initial release
+- Frontend editing with modern UI
+- AI integration framework
+- Demo content type
+- Security and permission system
