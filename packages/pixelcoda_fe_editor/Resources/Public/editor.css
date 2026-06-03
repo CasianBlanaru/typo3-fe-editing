@@ -24,6 +24,8 @@
 .pc-fe-image-edit-button[hidden]{display:none}
 .pc-fe-draggable{position:relative;cursor:grab}
 .pc-fe-dragging{opacity:.72;cursor:grabbing}
-.pc-fe-drag-handle{position:absolute;left:.75rem;top:.75rem;width:32px;height:32px;padding:0;display:inline-flex;align-items:center;justify-content:center;border:1px solid rgba(17,24,39,.16);border-radius:6px;background:#fff;color:#111827;box-shadow:0 8px 22px rgba(17,24,39,.18);font:800 14px/1 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;cursor:grab;z-index:100000}
-.pc-fe-drag-handle:hover{border-color:#0b76b7;color:#0b76b7;box-shadow:0 0 0 3px rgba(14,165,233,.2),0 8px 22px rgba(17,24,39,.18)}
-.pc-fe-drag-handle[hidden]{display:none}
+.pc-fe-move-controls{position:absolute;left:.75rem;top:.75rem;display:inline-flex;gap:.25rem;padding:.25rem;border:1px solid rgba(17,24,39,.12);border-radius:8px;background:#fff;box-shadow:0 8px 22px rgba(17,24,39,.18);z-index:100000}
+.pc-fe-move-controls[hidden]{display:none}
+.pc-fe-drag-handle,.pc-fe-move-button{width:34px;height:30px;padding:0;display:inline-flex;align-items:center;justify-content:center;border:1px solid rgba(17,24,39,.16);border-radius:6px;background:#fff;color:#111827;font:800 11px/1 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;cursor:pointer}
+.pc-fe-drag-handle{cursor:grab}
+.pc-fe-drag-handle:hover,.pc-fe-move-button:hover{border-color:#0b76b7;color:#0b76b7;box-shadow:0 0 0 3px rgba(14,165,233,.18)}

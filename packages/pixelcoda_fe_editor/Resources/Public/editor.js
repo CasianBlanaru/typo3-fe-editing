@@ -42,6 +42,9 @@
             document.querySelectorAll('.pc-fe-drag-handle').forEach(handle => {
                 handle.hidden = !on;
             });
+            document.querySelectorAll('.pc-fe-move-controls').forEach(controls => {
+                controls.hidden = !on;
+            });
         }
 
         function markContentFields() {
@@ -124,15 +127,17 @@
             frame.dataset.pcRecordUid = String(uid);
             frame.draggable = editMode;
             frame.classList.toggle('pc-fe-draggable', editMode);
-            if (frame.querySelector(':scope > .pc-fe-drag-handle')) return;
+            if (frame.querySelector(':scope > .pc-fe-move-controls')) return;
 
-            const handle = document.createElement('button');
-            handle.type = 'button';
-            handle.className = 'pc-fe-drag-handle';
-            handle.title = 'Element verschieben';
-            handle.hidden = !editMode;
-            handle.innerHTML = '<span aria-hidden="true">::</span>';
-            frame.prepend(handle);
+            const controls = document.createElement('div');
+            controls.className = 'pc-fe-move-controls';
+            controls.hidden = !editMode;
+            controls.innerHTML = [
+                '<button type="button" class="pc-fe-drag-handle" title="Element ziehen" aria-label="Element ziehen"><span aria-hidden="true">::</span></button>',
+                '<button type="button" class="pc-fe-move-button" data-pc-move="up" title="Nach oben" aria-label="Nach oben">Up</button>',
+                '<button type="button" class="pc-fe-move-button" data-pc-move="down" title="Nach unten" aria-label="Nach unten">Down</button>'
+            ].join('');
+            frame.prepend(controls);
         }
 
         function getIcon(name) {
@@ -215,24 +220,25 @@
             return document.querySelector('[data-pc-field][contenteditable="true"]');
         }
 
-        function applyAiPolish(element) {
+        async function applyAiPolish(element) {
             const text = normalizeText(element.innerText || element.textContent || '');
             if (!text) return false;
 
-            if (element.dataset.field === 'header') {
-                element.textContent = text
-                    .replace(/\bEDIT\b/gi, '')
-                    .replace(/\s+/g, ' ')
-                    .trim();
-                return true;
+            const result = await requestAiSuggestion({
+                text: element.dataset.field === 'header' ? text : element.innerHTML,
+                field: element.dataset.field || 'bodytext',
+                action: 'rewrite'
+            });
+            if (!result || !result.ok || !result.text) {
+                setStatus(result && result.error === 'openai_api_key_missing' ? 'OPENAI_API_KEY fehlt' : 'AI fehlgeschlagen', 'warning');
+                return false;
             }
 
-            const improved = text
-                .replace(/\s+/g, ' ')
-                .replace(/\bfrontends\b/g, 'Frontend-Projekte')
-                .replace(/\bconfigure\b/g, 'pflegen')
-                .trim();
-            element.innerHTML = '<p>' + improved + '</p>';
+            if (element.dataset.field === 'header') {
+                element.textContent = normalizeText(result.text);
+            } else {
+                element.innerHTML = result.text;
+            }
             return true;
         }
 
@@ -291,6 +297,16 @@
             if (e.target.closest('#pc-save')) {
                 await saveDirtyFields();
             }
+            if (e.target.closest('.pc-fe-move-button')) {
+                const button = e.target.closest('.pc-fe-move-button');
+                const frame = button ? button.closest('[data-pc-record-uid]') : null;
+                const direction = button ? button.dataset.pcMove : '';
+                if (frame && moveFrame(frame, direction) && await saveCurrentOrder()) {
+                    setStatus('Reihenfolge gespeichert', 'success');
+                } else {
+                    setStatus('Kann nicht verschieben', 'warning');
+                }
+            }
             if (e.target.closest('.pc-fe-image-edit-button')) {
                 const button = e.target.closest('.pc-fe-image-edit-button');
                 const editUrl = button ? button.dataset.editUrl : '';
@@ -308,7 +324,8 @@
                     editToggle && editToggle.classList.toggle('active', true);
                 }
                 const el = getActiveEditable();
-                if (el && applyAiPolish(el)) {
+                setStatus('AI arbeitet...', 'info');
+                if (el && await applyAiPolish(el)) {
                     markDirty(el);
                     setStatus('AI Vorschlag bereit', 'success');
                 } else {
@@ -361,12 +378,43 @@
         document.addEventListener('dragstart', (e) => {
             if (!editMode) return;
             const frame = e.target.closest && e.target.closest('[data-pc-record-uid]');
-            if (!frame || e.target.closest('[data-pc-field]')) return;
+            if (!frame || e.target.closest('[data-pc-field]') || e.target.closest('.pc-fe-move-button')) return;
             draggedFrame = frame;
             frame.classList.add('pc-fe-dragging');
             e.dataTransfer.effectAllowed = 'move';
             e.dataTransfer.setData('text/plain', frame.dataset.pcRecordUid);
         });
+
+        function moveFrame(frame, direction) {
+            if (!frame || !frame.parentElement) return false;
+            const sibling = direction === 'up'
+                ? previousEditableFrame(frame)
+                : nextEditableFrame(frame);
+            if (!sibling) return false;
+
+            if (direction === 'up') {
+                frame.parentElement.insertBefore(frame, sibling);
+            } else {
+                frame.parentElement.insertBefore(sibling, frame);
+            }
+            return true;
+        }
+
+        function previousEditableFrame(frame) {
+            let sibling = frame.previousElementSibling;
+            while (sibling && !sibling.dataset.pcRecordUid) {
+                sibling = sibling.previousElementSibling;
+            }
+            return sibling || null;
+        }
+
+        function nextEditableFrame(frame) {
+            let sibling = frame.nextElementSibling;
+            while (sibling && !sibling.dataset.pcRecordUid) {
+                sibling = sibling.nextElementSibling;
+            }
+            return sibling || null;
+        }
 
         document.addEventListener('dragover', (e) => {
             if (!editMode || !draggedFrame) return;
@@ -492,7 +540,7 @@
                 [NEWID]: {
                     pid: parseInt(pid, 10),
                     colPos: parseInt(colPos, 10),
-                    CType: 'text',
+                    CType: 'textpic',
                     header: 'Neues Element',
                     bodytext: '<p>Hier können Sie Ihren Text eingeben...</p>'
                 }
@@ -517,6 +565,34 @@
             return false;
         }
         return true;
+    }
+
+    async function requestAiSuggestion({ text, field, action }) {
+        const url = TYPO3 && TYPO3.settings && TYPO3.settings.ajaxUrls ? TYPO3.settings.ajaxUrls['fe_editor_ai'] : null;
+        const formToken = TYPO3 && TYPO3.security ? TYPO3.security.feEditorToken : null;
+        if (!url || !formToken) {
+            console.error('PixelCoda FE Editor: missing aiUrl or formToken');
+            return { ok: false, error: 'missing_ai_url_or_token' };
+        }
+        const res = await fetch(url, {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: new URLSearchParams({
+                text,
+                field,
+                action,
+                formToken
+            })
+        });
+        const json = await parseJsonResponse(res);
+        if (!res.ok || !json.ok) {
+            console.error('AI failed', json.error || json.message || 'Unknown error');
+        }
+        return json;
     }
 
     async function saveCurrentOrder() {

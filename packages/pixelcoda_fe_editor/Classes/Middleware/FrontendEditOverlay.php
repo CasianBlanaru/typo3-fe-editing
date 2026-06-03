@@ -42,9 +42,10 @@ final class FrontendEditOverlay implements MiddlewareInterface
             ->createForType('backend')
             ->generateToken('pixelcoda-fe-editor', 'fe-editor-action');
         $ajaxUrl = (string)$this->uriBuilder->buildUriFromRoute('ajax_fe_editor_save');
+        $aiUrl = (string)$this->uriBuilder->buildUriFromRoute('ajax_fe_editor_ai');
         $pageId = $this->getPageId($request);
         $records = $this->getEditableContentRecords($pageId);
-        $body = str_ireplace('</body>', $this->buildInjectionCode($csrfToken, $ajaxUrl, $pageId, $records) . '</body>', $body);
+        $body = str_ireplace('</body>', $this->buildInjectionCode($csrfToken, $ajaxUrl, $aiUrl, $pageId, $records) . '</body>', $body);
 
         $response->getBody()->rewind();
         $response->getBody()->write($body);
@@ -73,7 +74,7 @@ final class FrontendEditOverlay implements MiddlewareInterface
     /**
      * @param array<int, array<string, int|string>> $records
      */
-    private function buildInjectionCode(string $csrfToken, string $ajaxUrl, int $pageId, array $records): string
+    private function buildInjectionCode(string $csrfToken, string $ajaxUrl, string $aiUrl, int $pageId, array $records): string
     {
         $cssPath = htmlspecialchars($this->getAssetWebPath('EXT:pixelcoda_fe_editor/Resources/Public/editor.css'), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
         $scriptPath = htmlspecialchars($this->getAssetWebPath('EXT:pixelcoda_fe_editor/Resources/Public/editor.js'), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
@@ -85,6 +86,7 @@ final class FrontendEditOverlay implements MiddlewareInterface
         $addIconHtmlPath = htmlspecialchars($addIconPath, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
         $encodedToken = json_encode($csrfToken, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT);
         $encodedAjaxUrl = json_encode($ajaxUrl, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT);
+        $encodedAiUrl = json_encode($aiUrl, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT);
         $encodedPageId = json_encode($pageId, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT);
         $encodedRecords = json_encode($records, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT);
         $encodedIcons = json_encode([
@@ -106,6 +108,7 @@ final class FrontendEditOverlay implements MiddlewareInterface
 window.TYPO3 = window.TYPO3 || { settings: {}, security: {} };
 window.TYPO3.settings.ajaxUrls = window.TYPO3.settings.ajaxUrls || {};
 window.TYPO3.settings.ajaxUrls['fe_editor_save'] = {$encodedAjaxUrl};
+window.TYPO3.settings.ajaxUrls['fe_editor_ai'] = {$encodedAiUrl};
 window.TYPO3.security.feEditorToken = {$encodedToken};
 window.TYPO3.settings.feEditorPageId = {$encodedPageId};
 window.TYPO3.settings.feEditorRecords = {$encodedRecords};
