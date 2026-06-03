@@ -1,0 +1,7 @@
+
+Welcome to Pa11y
+
+ > Running Pa11y on URL https://typo3-inst.localhost/
+
+No issues found!
+

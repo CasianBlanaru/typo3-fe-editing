@@ -50,7 +50,7 @@ final class AiController
                     'ok' => false,
                     'error' => 'openai_api_key_missing',
                     'message' => 'OPENAI_API_KEY is not configured',
-                ], 503);
+                ]);
             }
 
             $model = (string)(getenv('OPENAI_MODEL') ?: ($_ENV['OPENAI_MODEL'] ?? 'gpt-4.1-mini'));
