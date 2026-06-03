@@ -5,8 +5,12 @@ use TYPO3\CMS\Core\FormProtection\FormProtectionFactory;
 
 final class TokenService
 {
-    public static function beToken(string $context): string
+    public function __construct(
+        private readonly FormProtectionFactory $formProtectionFactory
+    ) {}
+
+    public function beToken(string $context): string
     {
-        return FormProtectionFactory::get()->generateToken($context);
+        return $this->formProtectionFactory->createForType('backend')->generateToken($context);
     }
 }

@@ -5,21 +5,17 @@ namespace PixelCoda\FeEditor\Api;
 
 use PixelCoda\FeEditor\Event\AfterSaveEvent;
 use PixelCoda\FeEditor\Event\BeforeSaveEvent;
-use Psr\EventDispatcher\EventDispatcherInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use TYPO3\CMS\Backend\Utility\BackendUtility;
 use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
 use TYPO3\CMS\Core\DataHandling\DataHandler;
+use TYPO3\CMS\Core\EventDispatcher\EventDispatcher;
 use TYPO3\CMS\Core\Http\JsonResponse;
 use TYPO3\CMS\Core\FormProtection\FormProtectionFactory;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 
 final class SaveController
 {
-    public function __construct(
-        private readonly EventDispatcherInterface $eventDispatcher
-    ) {}
-
     public function handle(ServerRequestInterface $request): JsonResponse
     {
         try {
@@ -29,10 +25,10 @@ final class SaveController
             }
 
             $parsed = $request->getParsedBody() ?? [];
-            $token  = (string)($parsed['token'] ?? '');
+            $formToken  = (string)($parsed['formToken'] ?? '');
 
-            $fp = FormProtectionFactory::get();
-            if (!$fp->validateToken($token, 'pixelcoda-fe-editor', 'fe-editor-action')) {
+            $fp = GeneralUtility::makeInstance(FormProtectionFactory::class)->createFromRequest($request);
+            if (!$fp->validateToken($formToken, 'pixelcoda-fe-editor', 'fe-editor-action')) {
                 return new JsonResponse(['error' => 'invalid_token', 'message' => 'CSRF token validation failed'], 403);
             }
 
@@ -68,7 +64,7 @@ final class SaveController
                 }
 
                 $beforeSaveEvent = new BeforeSaveEvent($table, $field, $value, (int)$uid, $record);
-                $this->eventDispatcher->dispatch($beforeSaveEvent);
+                GeneralUtility::makeInstance(EventDispatcher::class)->dispatch($beforeSaveEvent);
 
                 $finalValue = $beforeSaveEvent->getContent();
                 $data[$table][(int)$uid] = [$field => $finalValue];
@@ -144,7 +140,7 @@ final class SaveController
 
             if ($table !== '' && $field !== '' && $finalValue !== null) {
                 $afterSaveEvent = new AfterSaveEvent($table, $field, $finalValue, (int)$uid, $record, true);
-                $this->eventDispatcher->dispatch($afterSaveEvent);
+                GeneralUtility::makeInstance(EventDispatcher::class)->dispatch($afterSaveEvent);
             }
 
             $result = [
