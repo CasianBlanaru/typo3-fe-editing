@@ -11,5 +11,10 @@
     "psr-4": {
       "PixelCoda\\FeEditor\\": "Classes/"
     }
+  },
+  "extra": {
+    "typo3/cms": {
+      "extension-key": "pixelcoda_fe_editor"
+    }
   }
 }
