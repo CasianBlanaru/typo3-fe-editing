@@ -77,18 +77,29 @@ final class FrontendEditOverlay implements MiddlewareInterface
     {
         $cssPath = htmlspecialchars($this->getAssetWebPath('EXT:pixelcoda_fe_editor/Resources/Public/editor.css'), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
         $scriptPath = htmlspecialchars($this->getAssetWebPath('EXT:pixelcoda_fe_editor/Resources/Public/editor.js'), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+        $editIconPath = $this->getAssetWebPath('EXT:pixelcoda_fe_editor/Resources/Public/Icons/edit.svg');
+        $aiIconPath = $this->getAssetWebPath('EXT:pixelcoda_fe_editor/Resources/Public/Icons/ai.svg');
+        $addIconPath = $this->getAssetWebPath('EXT:pixelcoda_fe_editor/Resources/Public/Icons/add.svg');
+        $editIconHtmlPath = htmlspecialchars($editIconPath, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+        $aiIconHtmlPath = htmlspecialchars($aiIconPath, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+        $addIconHtmlPath = htmlspecialchars($addIconPath, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
         $encodedToken = json_encode($csrfToken, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT);
         $encodedAjaxUrl = json_encode($ajaxUrl, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT);
         $encodedPageId = json_encode($pageId, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT);
         $encodedRecords = json_encode($records, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT);
+        $encodedIcons = json_encode([
+            'edit' => $editIconPath,
+            'ai' => $aiIconPath,
+            'add' => $addIconPath,
+        ], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT);
 
         return <<<HTML
 <link rel="stylesheet" href="{$cssPath}">
 <div id="pc-fe-toolbar-root" class="pc-fe-toolbar">
-  <button id="pc-edit-toggle" class="pc-fe-button" type="button" title="Frontend Editing aktivieren">Edit</button>
-  <button id="pc-save" class="pc-fe-button pc-fe-save" type="button" title="Aenderungen speichern" disabled>Save</button>
-  <button id="pc-ai" class="pc-fe-button" type="button" title="KI-Assistent">AI</button>
-  <button id="pc-add-global" class="pc-fe-button" type="button" title="Neues Element hinzufuegen">+</button>
+  <button id="pc-edit-toggle" class="pc-fe-button" type="button" title="Frontend Editing aktivieren"><img class="pc-fe-icon" src="{$editIconHtmlPath}" alt="" onerror="this.hidden=true">Edit</button>
+  <button id="pc-save" class="pc-fe-button pc-fe-save" type="button" title="Aenderungen speichern" disabled><img class="pc-fe-icon" src="{$editIconHtmlPath}" alt="" onerror="this.hidden=true">Save</button>
+  <button id="pc-ai" class="pc-fe-button" type="button" title="KI-Assistent"><img class="pc-fe-icon" src="{$aiIconHtmlPath}" alt="" onerror="this.hidden=true">AI</button>
+  <button id="pc-add-global" class="pc-fe-button" type="button" title="Neues Element hinzufuegen"><img class="pc-fe-icon" src="{$addIconHtmlPath}" alt="" onerror="this.hidden=true"></button>
   <span id="pc-fe-status" class="pc-fe-status" aria-live="polite"></span>
 </div>
 <script>
@@ -98,6 +109,7 @@ window.TYPO3.settings.ajaxUrls['fe_editor_save'] = {$encodedAjaxUrl};
 window.TYPO3.security.feEditorToken = {$encodedToken};
 window.TYPO3.settings.feEditorPageId = {$encodedPageId};
 window.TYPO3.settings.feEditorRecords = {$encodedRecords};
+window.TYPO3.settings.feEditorIcons = {$encodedIcons};
 </script>
 <script src="{$scriptPath}" defer></script>
 HTML;
@@ -139,15 +151,27 @@ HTML;
             ->executeQuery()
             ->fetchAllAssociative();
 
-        return array_map(static function (array $row): array {
-            return [
+        $records = [];
+        foreach ($rows as $row) {
+            $uid = (int)$row['uid'];
+            $records[] = [
                 'uid' => (int)$row['uid'],
                 'pid' => (int)$row['pid'],
                 'colPos' => (int)$row['colPos'],
                 'CType' => (string)$row['CType'],
                 'header' => trim((string)$row['header']),
                 'bodytextText' => trim(html_entity_decode(strip_tags((string)$row['bodytext']), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8')),
+                'editUrl' => (string)$this->uriBuilder->buildUriFromRoute('record_edit', [
+                    'edit' => [
+                        'tt_content' => [
+                            $uid => 'edit',
+                        ],
+                    ],
+                    'returnUrl' => '/',
+                ]),
             ];
-        }, $rows);
+        }
+
+        return $records;
     }
 }

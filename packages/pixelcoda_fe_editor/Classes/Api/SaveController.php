@@ -8,6 +8,7 @@ use PixelCoda\FeEditor\Event\BeforeSaveEvent;
 use Psr\Http\Message\ServerRequestInterface;
 use TYPO3\CMS\Backend\Utility\BackendUtility;
 use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
+use TYPO3\CMS\Core\Cache\CacheManager;
 use TYPO3\CMS\Core\DataHandling\DataHandler;
 use TYPO3\CMS\Core\EventDispatcher\EventDispatcher;
 use TYPO3\CMS\Core\Http\JsonResponse;
@@ -33,7 +34,7 @@ final class SaveController
             }
 
             $allowedTables = [
-                'tt_content' => ['header', 'bodytext', 'subheader', 'frame_class', 'CType', 'colPos', 'pid'],
+                'tt_content' => ['header', 'bodytext', 'subheader', 'frame_class', 'CType', 'colPos', 'pid', 'sorting'],
             ];
 
             $table = (string)($parsed['table'] ?? '');
@@ -46,6 +47,7 @@ final class SaveController
             $data = [];
             $record = [];
             $finalValue = null;
+            $affectedPageIds = [];
 
             if ($table !== '' && $field !== '') {
                 if (!isset($allowedTables[$table]) || !in_array($field, $allowedTables[$table], true)) {
@@ -61,6 +63,9 @@ final class SaveController
                 $record = BackendUtility::getRecord($table, (int)$uid) ?: [];
                 if ($record === []) {
                     return new JsonResponse(['error' => 'record_not_found'], 404);
+                }
+                if (isset($record['pid']) && (int)$record['pid'] > 0) {
+                    $affectedPageIds[(int)$record['pid']] = true;
                 }
 
                 $beforeSaveEvent = new BeforeSaveEvent($table, $field, $value, (int)$uid, $record);
@@ -89,6 +94,15 @@ final class SaveController
                         $filtered = array_intersect_key($fields, array_flip($allowedTables[$t]));
                         if ($filtered !== []) {
                             $data[$t][$id] = $filtered;
+                            if (isset($filtered['pid']) && (int)$filtered['pid'] > 0) {
+                                $affectedPageIds[(int)$filtered['pid']] = true;
+                            }
+                            if (ctype_digit((string)$id)) {
+                                $payloadRecord = BackendUtility::getRecord((string)$t, (int)$id, 'pid') ?: [];
+                                if (isset($payloadRecord['pid']) && (int)$payloadRecord['pid'] > 0) {
+                                    $affectedPageIds[(int)$payloadRecord['pid']] = true;
+                                }
+                            }
                         }
                     }
                 }
@@ -143,10 +157,19 @@ final class SaveController
                 GeneralUtility::makeInstance(EventDispatcher::class)->dispatch($afterSaveEvent);
             }
 
+            $affectedPageIds = array_keys($affectedPageIds);
+            if ($affectedPageIds !== []) {
+                GeneralUtility::makeInstance(CacheManager::class)->flushCachesInGroupByTags(
+                    'pages',
+                    array_map(static fn(int $pageId): string => 'pageId_' . $pageId, $affectedPageIds)
+                );
+            }
+
             $result = [
                 'ok' => true,
                 'message' => 'Data saved successfully',
                 'copymap' => property_exists($dh, 'copyMappingArray_merged') ? $dh->copyMappingArray_merged : [],
+                'clearedPageIds' => $affectedPageIds,
             ];
             return new JsonResponse($result, 200);
         } catch (\Exception $e) {

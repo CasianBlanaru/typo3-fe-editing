@@ -12,6 +12,7 @@
         const dirtyFields = new Map();
         let saveTimer = null;
         let activeEditable = null;
+        let draggedFrame = null;
 
         updateToolbarState();
 
@@ -28,12 +29,26 @@
                     el.dataset.pcOriginalValue = getFieldValue(el);
                 }
             });
+            document.querySelectorAll('.pc-fe-image-edit-button').forEach(button => {
+                button.hidden = !on;
+            });
+            document.querySelectorAll('[data-pc-image-field]').forEach(image => {
+                image.classList.toggle('pc-fe-image', on);
+            });
+            document.querySelectorAll('[data-pc-record-uid]').forEach(frame => {
+                frame.draggable = on;
+                frame.classList.toggle('pc-fe-draggable', on);
+            });
+            document.querySelectorAll('.pc-fe-drag-handle').forEach(handle => {
+                handle.hidden = !on;
+            });
         }
 
         function markContentFields() {
             document.querySelectorAll('[id^="c"]').forEach(frame => {
                 const uid = parseInt((frame.id || '').slice(1), 10);
                 if (!uid || frame.closest('.pc-fe-toolbar')) return;
+                markFrame(frame, uid);
 
                 const header = frame.querySelector(':scope h1, :scope h2, :scope h3, :scope h4, :scope h5, :scope h6');
                 if (header && !header.dataset.pcField) {
@@ -58,6 +73,7 @@
 
                 const article = findArticleForRecord(record);
                 if (!article) return;
+                markFrame(article, record.uid);
 
                 const header = article.querySelector('h1, h2, h3, h4, h5, h6');
                 if (header && !header.dataset.pcField) {
@@ -68,6 +84,8 @@
                 if (body && !body.dataset.pcField && body !== header) {
                     markField(body, record.uid, 'bodytext');
                 }
+
+                markImages(article, record);
             });
         }
 
@@ -101,6 +119,56 @@
             element.dataset.field = field;
         }
 
+        function markFrame(frame, uid) {
+            if (frame.closest('.pc-fe-toolbar')) return;
+            frame.dataset.pcRecordUid = String(uid);
+            frame.draggable = editMode;
+            frame.classList.toggle('pc-fe-draggable', editMode);
+            if (frame.querySelector(':scope > .pc-fe-drag-handle')) return;
+
+            const handle = document.createElement('button');
+            handle.type = 'button';
+            handle.className = 'pc-fe-drag-handle';
+            handle.title = 'Element verschieben';
+            handle.hidden = !editMode;
+            handle.innerHTML = '<span aria-hidden="true">::</span>';
+            frame.prepend(handle);
+        }
+
+        function getIcon(name) {
+            return TYPO3 && TYPO3.settings && TYPO3.settings.feEditorIcons
+                ? (TYPO3.settings.feEditorIcons[name] || '')
+                : '';
+        }
+
+        function createIconMarkup(name) {
+            const icon = getIcon(name);
+            return icon
+                ? '<img class="pc-fe-icon" src="' + icon + '" alt="" onerror="this.hidden=true">'
+                : '';
+        }
+
+        function markImages(container, record) {
+            container.querySelectorAll('img').forEach(image => {
+                if (image.closest('.pc-fe-toolbar') || image.dataset.pcImageField) return;
+                image.dataset.pcImageField = '1';
+                image.dataset.uid = String(record.uid);
+                image.dataset.editUrl = record.editUrl || '';
+                image.classList.toggle('pc-fe-image', editMode);
+
+                const host = image.parentElement || container;
+                host.classList.add('pc-fe-image-host');
+
+                const button = document.createElement('button');
+                button.type = 'button';
+                button.className = 'pc-fe-image-edit-button';
+                button.dataset.editUrl = record.editUrl || '';
+                button.hidden = !editMode;
+                button.innerHTML = createIconMarkup('edit') + 'Bild';
+                host.appendChild(button);
+            });
+        }
+
         function getFieldKey(element) {
             return [element.dataset.table, element.dataset.uid, element.dataset.field].join(':');
         }
@@ -124,7 +192,13 @@
             const dirty = dirtyFields.size > 0;
             saveButton.disabled = !dirty;
             saveButton.classList.toggle('dirty', dirty);
-            saveButton.textContent = dirty ? 'Save *' : 'Save';
+            saveButton.classList.toggle('has-unsaved-changes', dirty);
+            const textNode = Array.from(saveButton.childNodes).find(node => node.nodeType === Node.TEXT_NODE);
+            if (textNode) {
+                textNode.textContent = dirty ? 'Save *' : 'Save';
+            } else {
+                saveButton.appendChild(document.createTextNode(dirty ? 'Save *' : 'Save'));
+            }
         }
 
         function scheduleAutosave() {
@@ -217,6 +291,16 @@
             if (e.target.closest('#pc-save')) {
                 await saveDirtyFields();
             }
+            if (e.target.closest('.pc-fe-image-edit-button')) {
+                const button = e.target.closest('.pc-fe-image-edit-button');
+                const editUrl = button ? button.dataset.editUrl : '';
+                if (editUrl) {
+                    window.open(editUrl, '_blank', 'noopener');
+                    setStatus('Bild im Backend bearbeiten', 'info');
+                } else {
+                    setStatus('Keine Bild-URL', 'warning');
+                }
+            }
             if (e.target.closest('#pc-ai')) {
                 if (!editMode) {
                     editMode = true;
@@ -272,6 +356,37 @@
             activeEditable = el;
             markDirty(el);
             setStatus('Ungespeichert', 'info');
+        });
+
+        document.addEventListener('dragstart', (e) => {
+            if (!editMode) return;
+            const frame = e.target.closest && e.target.closest('[data-pc-record-uid]');
+            if (!frame || e.target.closest('[data-pc-field]')) return;
+            draggedFrame = frame;
+            frame.classList.add('pc-fe-dragging');
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/plain', frame.dataset.pcRecordUid);
+        });
+
+        document.addEventListener('dragover', (e) => {
+            if (!editMode || !draggedFrame) return;
+            const target = e.target.closest && e.target.closest('[data-pc-record-uid]');
+            if (!target || target === draggedFrame || target.parentElement !== draggedFrame.parentElement) return;
+            e.preventDefault();
+            const rect = target.getBoundingClientRect();
+            const after = e.clientY > rect.top + rect.height / 2;
+            target.parentElement.insertBefore(draggedFrame, after ? target.nextSibling : target);
+        });
+
+        document.addEventListener('dragend', async () => {
+            if (!draggedFrame) return;
+            draggedFrame.classList.remove('pc-fe-dragging');
+            draggedFrame = null;
+            if (await saveCurrentOrder()) {
+                setStatus('Reihenfolge gespeichert', 'success');
+            } else {
+                setStatus('Reihenfolge nicht gespeichert', 'warning');
+            }
         });
 
         // Save on blur
@@ -399,6 +514,49 @@
         const json = await parseJsonResponse(res);
         if (!res.ok || !json.ok) {
             console.error('Create failed', json.error || json.errors || 'Unknown error');
+            return false;
+        }
+        return true;
+    }
+
+    async function saveCurrentOrder() {
+        const frames = Array.from(document.querySelectorAll('[data-pc-record-uid]'))
+            .filter(frame => frame.offsetParent !== null);
+        if (frames.length < 2) return true;
+
+        const data = { tt_content: {} };
+        frames.forEach((frame, index) => {
+            data.tt_content[frame.dataset.pcRecordUid] = {
+                sorting: (index + 1) * 256
+            };
+        });
+
+        return saveDataPayload(data);
+    }
+
+    async function saveDataPayload(data) {
+        const url = TYPO3 && TYPO3.settings && TYPO3.settings.ajaxUrls ? TYPO3.settings.ajaxUrls['fe_editor_save'] : null;
+        const formToken = TYPO3 && TYPO3.security ? TYPO3.security.feEditorToken : null;
+        if (!url || !formToken) {
+            console.error('PixelCoda FE Editor: missing ajaxUrl or formToken');
+            return false;
+        }
+        const res = await fetch(url, {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: new URLSearchParams({
+                data: JSON.stringify(data),
+                cmd: JSON.stringify({}),
+                formToken
+            })
+        });
+        const json = await parseJsonResponse(res);
+        if (!res.ok || !json.ok) {
+            console.error('Order save failed', json.error || json.errors || 'Unknown error');
             return false;
         }
         return true;
