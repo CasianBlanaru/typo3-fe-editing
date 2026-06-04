@@ -1,0 +1,10 @@
+parameters:
+  level: max
+  paths:
+    - ../Classes
+    - ../Configuration
+    - ../ext_localconf.php
+    - ../ext_tables.php
+  bootstrapFiles:
+    - ../../../../../vendor/autoload.php
+  tmpDir: ../../../../../var/cache/phpstan-fe-editor

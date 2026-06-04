@@ -2,8 +2,10 @@
 defined('TYPO3') || die();
 
 call_user_func(function () {
+    /** @var array{tt_content: array{types: array<string, mixed>, columns: array{CType: array{config: array{items: array<int, mixed>}}}}} $tca */
+    $tca = &$GLOBALS['TCA'];
     // Register CType
-    $GLOBALS['TCA']['tt_content']['types']['pc_demo'] = [
+    $tca['tt_content']['types']['pc_demo'] = [
         'showitem' => '
             --div--;Content,
                 header, subheader,
@@ -16,7 +18,7 @@ call_user_func(function () {
     ];
 
     // Add to list of CTypes
-    $GLOBALS['TCA']['tt_content']['columns']['CType']['config']['items'][] = [
+    $tca['tt_content']['columns']['CType']['config']['items'][] = [
         'label' => 'PixelCoda Demo (editierbar)',
         'value' => 'pc_demo',
         'icon'  => 'ext-pixelcoda-fe-editor'

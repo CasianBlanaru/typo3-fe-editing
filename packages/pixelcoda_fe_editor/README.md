@@ -2,7 +2,7 @@
 
 Frontend Editing for TYPO3 12, 13 and 14 with inline text editing, content creation, sorting controls, image editing shortcuts and an optional OpenAI-powered writing assistant.
 
-> Status: alpha / active development. The extension is usable in the current project, but public API and UI details may still change.
+> Status: stable. Version 1.0.0 supports TYPO3 12 LTS, TYPO3 13 LTS and TYPO3 14.
 
 ![Frontend editing toolbar](Documentation/Images/frontend-editing-toolbar.png)
 
@@ -14,8 +14,9 @@ Frontend Editing for TYPO3 12, 13 and 14 with inline text editing, content creat
 - CSRF protection through TYPO3 backend `FormProtection`.
 - Content creation through the `+` button.
 - Content sorting with drag-and-drop plus explicit `Up` / `Down` controls for large content elements.
-- Image edit shortcut that opens the TYPO3 backend record editor for the owning content element.
-- Optional OpenAI integration through a server-side TYPO3 Ajax endpoint.
+- Image edit shortcut that opens the TYPO3 contextual record editor in an accessible side canvas.
+- Automatic frontend refresh after saving the contextual TYPO3 record editor.
+- Optional AI integration with OpenAI, Anthropic Claude, OpenRouter or Mistral through a server-side TYPO3 Ajax endpoint.
 - TYPO3 page cache clearing after save, create and reorder operations.
 
 ![Image edit button](Documentation/Images/image-edit-button.png)
@@ -81,7 +82,19 @@ Click `Edit`, select a marked headline or body text and edit directly in the fro
 The extension detects editable fields in two ways:
 
 - Native markers: `data-pc-field`, `data-table`, `data-uid`, `data-field`
+- TYPO3 standard wrappers such as `id="c123"`
+- Common existing wrappers using `data-content-element-uid` or `data-table="tt_content" data-uid`
 - Fallback matching from current page `tt_content` records
+
+This makes inline editing work on many existing classic TYPO3 frontends without changing Fluid templates. A fully headless frontend still needs a stable content-record identifier because rendered text alone cannot guarantee an unambiguous database mapping.
+
+This follows the established TYPO3 frontend-editing convention of using standard content element `c-ids`, which are already emitted by Fluid Styled Content.
+
+Frontend editing can be disabled for individual backend users or groups with UserTSconfig:
+
+```typoscript
+tx_pixelcodafeeditor.disabled = 1
+```
 
 Recommended Fluid markup:
 
@@ -111,13 +124,34 @@ In edit mode every content element gets a small control group:
 
 The explicit buttons are important for large content elements where drag-and-drop can be hard to control. Reordering updates `tt_content.sorting` through the save endpoint.
 
-## Editing Images
+## Editing Images And Records
 
-The image button does not write FAL relations directly from the browser. It opens the TYPO3 backend record editor for the owning `tt_content` record. That keeps FAL references, permissions, workspaces and backend validation inside TYPO3.
+The image button does not write FAL relations directly from the browser. It opens TYPO3's contextual record editor in a right-side canvas on the current page. Saving uses TYPO3's native `typo3:editform:saved` message, closes the canvas and reloads the frontend preview.
+
+This keeps FAL references, permissions, workspaces and backend validation inside TYPO3 while avoiding a new browser tab.
+
+Normal clicks stay in the contextual canvas. `Ctrl`/`Cmd`-click opens the full TYPO3 editor in a new tab as an explicit fallback for advanced FormEngine workflows.
+
+The automatic wrapper detection, administrative UserTSconfig switch and contextual editor behavior follow established patterns documented by [XIMA TYPO3 Frontend Edit](https://docs.typo3.org/p/xima/xima-typo3-frontend-edit/main/en-us/Index.html). The Pixelcoda implementation remains independent and keeps its inline editing, AI and headless marker APIs.
 
 ## AI Service
 
-The AI button sends the active editable field to the server-side `AiController`. The browser never receives the API key.
+The AI button opens a side canvas and sends the active editable field to the server-side `AiController`. The browser never receives the API key.
+
+Configure provider, model and API key in:
+
+```text
+Admin Tools > Settings > Extension Configuration > pixelcoda_fe_editor
+```
+
+Supported providers:
+
+- OpenAI
+- Anthropic Claude
+- OpenRouter
+- Mistral
+
+Environment variables remain recommended for production and override backend configuration:
 
 Configure in DDEV:
 
@@ -132,7 +166,10 @@ Behavior:
 
 - `header`: returns plain headline text
 - `bodytext`: returns lightweight valid HTML
-- missing key: the toolbar shows `OPENAI_API_KEY fehlt`
+- select a marked text field before starting AI
+- the toolbar keeps the selected-field state visible
+- missing key: the toolbar shows `AI nicht konfiguriert: OPENAI_API_KEY fehlt`
+- request and permission errors remain distinguishable from a missing field selection
 
 The endpoint uses the OpenAI Responses API:
 
@@ -149,6 +186,10 @@ POST https://api.openai.com/v1/responses
 | Route/debug state |
 | --- |
 | ![Save route debug](Documentation/Images/save-route-debug.png) |
+
+| Contextual record canvas | AI writing canvas |
+| --- | --- |
+| ![Contextual record canvas](Documentation/Images/contextual-record-canvas.png) | ![AI writing canvas](Documentation/Images/ai-writing-canvas.png) |
 
 ## Contact
 
@@ -167,13 +208,27 @@ POST https://api.openai.com/v1/responses
 ddev exec ./vendor/bin/typo3 cache:flush
 ```
 
-### AI Returns `OPENAI_API_KEY fehlt`
+### AI Is Not Configured
 
-The key is not available inside the DDEV web container.
+Configure a provider and key in TYPO3 Extension Configuration or provide the key inside the DDEV web container.
 
 ```bash
 ddev exec printenv OPENAI_API_KEY
 ```
+
+The UI displays configuration problems as a user-facing status. A missing provider key is intentionally not logged as a browser console error.
+
+## Accessibility
+
+- Dialog semantics and labelled side canvas
+- Keyboard focus trap while the canvas is open
+- `Escape` closes the canvas
+- Focus returns to the triggering control
+- Visible `:focus-visible` states
+- Live status messages
+- Reduced-motion support
+- Responsive desktop and mobile layouts
+- Automatic light and dark color schemes
 
 If empty, add it to `.ddev/.env.web` and restart DDEV.
 
@@ -199,6 +254,7 @@ Manual checks:
 find packages/typo3_fe_editing/packages/pixelcoda_fe_editor -name '*.php' -print0 | xargs -0 -n1 php -l
 node --check packages/typo3_fe_editing/packages/pixelcoda_fe_editor/Resources/Public/editor.js
 ddev exec ./vendor/bin/typo3 debug:backend:routes | rg 'ajax_fe_editor_(save|ai)'
+ddev exec ./vendor/bin/phpstan analyse -c packages/typo3_fe_editing/packages/pixelcoda_fe_editor/Build/phpstan.neon --no-progress
 ```
 
 Accessibility and Lighthouse checks:
@@ -206,7 +262,7 @@ Accessibility and Lighthouse checks:
 ```bash
 npx --yes lighthouse https://typo3-inst.localhost/ \
   --chrome-flags="--headless --ignore-certificate-errors" \
-  --only-categories=accessibility,best-practices,seo \
+  --only-categories=performance,accessibility,best-practices,seo \
   --output=html --output=json \
   --output-path=packages/typo3_fe_editing/packages/pixelcoda_fe_editor/Build/reports/lighthouse
 

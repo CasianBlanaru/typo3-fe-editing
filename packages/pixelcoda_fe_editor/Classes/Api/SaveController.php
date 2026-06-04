@@ -25,8 +25,10 @@ final class SaveController
                 return new JsonResponse(['error' => 'auth_required', 'message' => 'Backend user authentication required'], 401);
             }
 
-            $parsed = $request->getParsedBody() ?? [];
-            $formToken  = (string)($parsed['formToken'] ?? '');
+            $parsedBody = $request->getParsedBody();
+            /** @var array<string, mixed> $parsed */
+            $parsed = is_array($parsedBody) ? $parsedBody : [];
+            $formToken = $this->stringValue($parsed['formToken'] ?? '');
 
             $fp = GeneralUtility::makeInstance(FormProtectionFactory::class)->createFromRequest($request);
             if (!$fp->validateToken($formToken, 'pixelcoda-fe-editor', 'fe-editor-action')) {
@@ -37,14 +39,16 @@ final class SaveController
                 'tt_content' => ['header', 'bodytext', 'subheader', 'frame_class', 'CType', 'colPos', 'pid', 'sorting'],
             ];
 
-            $table = (string)($parsed['table'] ?? '');
-            $uid = (string)($parsed['uid'] ?? '');
-            $field = (string)($parsed['field'] ?? '');
-            $value = (string)($parsed['value'] ?? '');
-            $rawData = (string)($parsed['data'] ?? '');
-            $rawCmd = (string)($parsed['cmd'] ?? '');
+            $table = $this->stringValue($parsed['table'] ?? '');
+            $uid = $this->stringValue($parsed['uid'] ?? '');
+            $field = $this->stringValue($parsed['field'] ?? '');
+            $value = $this->stringValue($parsed['value'] ?? '');
+            $rawData = $this->stringValue($parsed['data'] ?? '');
+            $rawCmd = $this->stringValue($parsed['cmd'] ?? '');
 
+            /** @var array<string, array<int|string, array<string, mixed>>> $data */
             $data = [];
+            /** @var array<string, mixed> $record */
             $record = [];
             $finalValue = null;
             $affectedPageIds = [];
@@ -60,12 +64,14 @@ final class SaveController
                     return new JsonResponse(['error' => 'no_modify_permission'], 403);
                 }
 
+                /** @var array<string, mixed> $record */
                 $record = BackendUtility::getRecord($table, (int)$uid) ?: [];
                 if ($record === []) {
                     return new JsonResponse(['error' => 'record_not_found'], 404);
                 }
-                if (isset($record['pid']) && (int)$record['pid'] > 0) {
-                    $affectedPageIds[(int)$record['pid']] = true;
+                $recordPid = $this->intValue($record['pid'] ?? 0);
+                if ($recordPid > 0) {
+                    $affectedPageIds[$recordPid] = true;
                 }
 
                 $beforeSaveEvent = new BeforeSaveEvent($table, $field, $value, (int)$uid, $record);
@@ -80,6 +86,7 @@ final class SaveController
                 if (!is_array($decoded)) {
                     return new JsonResponse(['error' => 'invalid_data_payload'], 400);
                 }
+                /** @var array<string, mixed> $decoded */
                 foreach ($decoded as $t => $rows) {
                     if (!isset($allowedTables[$t]) || !is_array($rows)) {
                         return new JsonResponse(['error' => 'table_not_allowed', 'table' => $t], 400);
@@ -94,13 +101,15 @@ final class SaveController
                         $filtered = array_intersect_key($fields, array_flip($allowedTables[$t]));
                         if ($filtered !== []) {
                             $data[$t][$id] = $filtered;
-                            if (isset($filtered['pid']) && (int)$filtered['pid'] > 0) {
-                                $affectedPageIds[(int)$filtered['pid']] = true;
+                            $payloadPid = $this->intValue($filtered['pid'] ?? 0);
+                            if ($payloadPid > 0) {
+                                $affectedPageIds[$payloadPid] = true;
                             }
                             if (ctype_digit((string)$id)) {
                                 $payloadRecord = BackendUtility::getRecord((string)$t, (int)$id, 'pid') ?: [];
-                                if (isset($payloadRecord['pid']) && (int)$payloadRecord['pid'] > 0) {
-                                    $affectedPageIds[(int)$payloadRecord['pid']] = true;
+                                $existingPid = $this->intValue($payloadRecord['pid'] ?? 0);
+                                if ($existingPid > 0) {
+                                    $affectedPageIds[$existingPid] = true;
                                 }
                             }
                         }
@@ -108,12 +117,14 @@ final class SaveController
                 }
             }
 
+            /** @var array<string, array<int|string, array<string, mixed>>> $cmd */
             $cmd = [];
             if ($rawCmd !== '') {
                 $decodedCmd = json_decode($rawCmd, true);
                 if (!is_array($decodedCmd)) {
                     return new JsonResponse(['error' => 'invalid_cmd_payload'], 400);
                 }
+                /** @var array<string, mixed> $decodedCmd */
                 foreach ($decodedCmd as $t => $rows) {
                     if (!isset($allowedTables[$t]) || !is_array($rows)) {
                         return new JsonResponse(['error' => 'cmd_table_not_allowed', 'table' => $t], 400);
@@ -168,7 +179,7 @@ final class SaveController
             $result = [
                 'ok' => true,
                 'message' => 'Data saved successfully',
-                'copymap' => property_exists($dh, 'copyMappingArray_merged') ? $dh->copyMappingArray_merged : [],
+                'copymap' => $dh->copyMappingArray_merged,
                 'clearedPageIds' => $affectedPageIds,
             ];
             return new JsonResponse($result, 200);
@@ -179,5 +190,15 @@ final class SaveController
                 'message' => 'An error occurred: ' . $e->getMessage()
             ], 500);
         }
+    }
+
+    private function stringValue(mixed $value): string
+    {
+        return is_scalar($value) ? (string)$value : '';
+    }
+
+    private function intValue(mixed $value): int
+    {
+        return is_numeric($value) ? (int)$value : 0;
     }
 }

@@ -3,8 +3,6 @@ declare(strict_types=1);
 
 namespace PixelCoda\FeEditor\ViewHelpers;
 
-use TYPO3\CMS\Core\Utility\GeneralUtility;
-use TYPO3\CMS\Backend\Utility\BackendUtility;
 use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
 use PixelCoda\FeEditor\Utility\PermissionChecker;
 use TYPO3Fluid\Fluid\Core\ViewHelper\AbstractTagBasedViewHelper;
@@ -42,8 +40,6 @@ class ContentEditableViewHelper extends AbstractTagBasedViewHelper
     {
         parent::initializeArguments();
 
-        $this->registerUniversalTagAttributes();
-
         $this->registerArgument(
             'table',
             'string',
@@ -77,34 +73,37 @@ class ContentEditableViewHelper extends AbstractTagBasedViewHelper
     public function render(): string
     {
         $content = $this->renderChildren();
+        $content = is_string($content) ? $content : '';
+        $tagName = $this->stringArgument('tag', 'div');
+        $table = $this->stringArgument('table');
+        $field = $this->stringArgument('field');
+        $uid = $this->stringArgument('uid');
 
         // Check if backend user has permissions
         $beUser = $this->getBackendUser();
         if (!$beUser || !PermissionChecker::mayEditFrontend($beUser)) {
             // Return content without editing capabilities
-            $this->tag->setTagName($this->arguments['tag']);
+            $this->tag->setTagName($tagName);
             $this->tag->setContent($content);
             return $this->tag->render();
         }
 
         // Check if user can modify this table
-        if (!$beUser->check('tables_modify', $this->arguments['table'])) {
-            $this->tag->setTagName($this->arguments['tag']);
+        if (!$beUser->check('tables_modify', $table)) {
+            $this->tag->setTagName($tagName);
             $this->tag->setContent($content);
             return $this->tag->render();
         }
 
         // Add editing attributes
-        $this->tag->setTagName($this->arguments['tag']);
+        $this->tag->setTagName($tagName);
         $this->tag->addAttribute('data-pc-field', '');
-        $this->tag->addAttribute('data-table', $this->arguments['table']);
-        $this->tag->addAttribute('data-field', $this->arguments['field']);
-        $this->tag->addAttribute('data-uid', $this->arguments['uid']);
+        $this->tag->addAttribute('data-table', $table);
+        $this->tag->addAttribute('data-field', $field);
+        $this->tag->addAttribute('data-uid', $uid);
         $this->tag->addAttribute('class', 'pc-fe-editable');
-        
-        // Get record for placeholder text
-        $record = BackendUtility::getRecord($this->arguments['table'], (int)$this->arguments['uid']);
-        $placeholder = $this->getPlaceholderText($this->arguments['table'], $this->arguments['field']);
+
+        $placeholder = $this->getPlaceholderText($field);
         
         if ($placeholder) {
             $this->tag->addAttribute('data-placeholder', $placeholder);
@@ -117,19 +116,9 @@ class ContentEditableViewHelper extends AbstractTagBasedViewHelper
     /**
      * Get placeholder text for field
      */
-    protected function getPlaceholderText(string $table, string $field): string
+    protected function getPlaceholderText(string $field): string
     {
-        $placeholderText = '';
-        
-        if (isset($GLOBALS['TCA'][$table]['columns'][$field]['label'])) {
-            $placeholderText = $GLOBALS['LANG']->sL($GLOBALS['TCA'][$table]['columns'][$field]['label']);
-        }
-        
-        if (empty($placeholderText)) {
-            $placeholderText = 'Click to edit ' . $field;
-        }
-
-        return $placeholderText;
+        return 'Click to edit ' . $field;
     }
 
     /**
@@ -137,6 +126,13 @@ class ContentEditableViewHelper extends AbstractTagBasedViewHelper
      */
     protected function getBackendUser(): ?BackendUserAuthentication
     {
-        return $GLOBALS['BE_USER'] ?? null;
+        $backendUser = $GLOBALS['BE_USER'] ?? null;
+        return $backendUser instanceof BackendUserAuthentication ? $backendUser : null;
+    }
+
+    private function stringArgument(string $name, string $default = ''): string
+    {
+        $value = $this->arguments[$name] ?? $default;
+        return is_scalar($value) ? (string)$value : $default;
     }
 }

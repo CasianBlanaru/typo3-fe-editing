@@ -1,20 +1,32 @@
-.pc-fe-toolbar{position:fixed;right:1rem;bottom:1rem;padding:.625rem;background:#fff;color:#111827;border:1px solid rgba(17,24,39,.14);border-radius:8px;z-index:99999;font:600 14px/1.2 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;box-shadow:0 16px 38px rgba(17,24,39,.22);display:flex;gap:.5rem;align-items:center}
+.pc-fe-toolbar{position:fixed;right:1rem;bottom:1rem;width:min(440px,calc(100vw - 2rem));padding:.5rem;background:#fff;color:#111827;border:1px solid rgba(17,24,39,.14);border-radius:8px;z-index:99999;font:600 14px/1.2 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;box-shadow:0 16px 38px rgba(17,24,39,.22)}
 .pc-fe-toolbar[hidden]{display:none}
-.pc-fe-editable{outline:2px dashed #0b76b7;outline-offset:3px;background:rgba(14,165,233,.08)}
-.pc-fe-editable:focus{outline-color:#047857;background:rgba(16,185,129,.1)}
-.pc-fe-button{min-width:42px;height:38px;padding:0 .75rem;display:inline-flex;align-items:center;justify-content:center;gap:.45rem;border-radius:6px;background:#111827;color:#fff;border:1px solid #111827;cursor:pointer;transition:background .16s,border-color .16s,box-shadow .16s,transform .16s;font:inherit}
-.pc-fe-icon{width:18px!important;height:18px!important;max-width:18px!important;max-height:18px!important;display:block;flex:0 0 auto;border-radius:0!important;box-shadow:none!important}
-.pc-fe-button:hover{background:#0b76b7;border-color:#0b76b7;box-shadow:0 0 0 3px rgba(14,165,233,.2)}
-.pc-fe-button.active{background:#047857;border-color:#047857;box-shadow:0 0 0 3px rgba(4,120,87,.24)}
-.pc-fe-save{background:#0b76b7;border-color:#0b76b7}
-.pc-fe-save.dirty{background:#b45309;border-color:#b45309;color:#fff}
-.pc-fe-button:disabled{background:#e5e7eb;color:#6b7280;border-color:#d1d5db;cursor:not-allowed;box-shadow:none;transform:none}
-.pc-fe-status{max-width:180px;color:#4b5563;font:500 12px/1.25 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pc-fe-toolbar-actions{display:flex;gap:.375rem;align-items:center}
+.pc-fe-toolbar-divider{width:1px;height:24px;margin:0 .125rem;background:#d1d5db}
+.pc-fe-toolbar-feedback{min-height:22px;margin-top:.4rem;padding:.35rem .5rem;display:flex;gap:.5rem;align-items:center;justify-content:space-between;border-radius:5px;background:#f3f4f6}
+.pc-fe-selection,.pc-fe-status{min-width:0;font:600 12px/1.25 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;overflow-wrap:anywhere}
+.pc-fe-selection{color:#4b5563}
+.pc-fe-selection[data-state="waiting"]{color:#92400e}
+.pc-fe-selection[data-state="selected"]{color:#047857}
+.pc-fe-status{margin-left:auto;color:#4b5563;text-align:right}
+.pc-fe-status:empty{display:none}
 .pc-fe-status[data-state="warning"]{color:#9a3412}
 .pc-fe-status[data-state="success"]{color:#047857}
 .pc-fe-status[data-state="info"]{color:#0b76b7}
-.pc-drop{padding:.75rem;border:2px dashed #E5E7EB;border-radius:.5rem;margin:.5rem 0;display:flex;gap:.5rem;align-items:center;justify-content:center}
-.pc-add{all:unset;background:#0EA5E9;color:#fff;padding:.25rem .5rem;border-radius:.375rem;cursor:pointer}
+.pc-fe-editable{outline:2px dashed #0b76b7;outline-offset:3px;background:rgba(14,165,233,.08)}
+.pc-fe-editable:focus,.pc-fe-editable.pc-fe-selected{outline:3px solid #047857;outline-offset:4px;background:rgba(16,185,129,.1)}
+.pc-fe-button{min-width:42px;height:38px;padding:0 .7rem;display:inline-flex;align-items:center;justify-content:center;gap:.4rem;border-radius:6px;background:#111827;color:#fff;border:1px solid #111827;cursor:pointer;transition:background .16s,border-color .16s,box-shadow .16s;font:inherit}
+.pc-fe-icon-button{padding:0;width:42px}
+.pc-fe-icon{width:18px!important;height:18px!important;max-width:18px!important;max-height:18px!important;display:block;flex:0 0 auto;border-radius:0!important;box-shadow:none!important}
+.pc-fe-button:hover{background:#0b76b7;border-color:#0b76b7;box-shadow:0 0 0 3px rgba(14,165,233,.2)}
+.pc-fe-button:focus-visible,.pc-fe-image-edit-button:focus-visible,.pc-fe-drag-handle:focus-visible,.pc-fe-move-button:focus-visible{outline:3px solid #f59e0b;outline-offset:2px}
+.pc-fe-button.active{background:#047857;border-color:#047857;box-shadow:0 0 0 3px rgba(4,120,87,.24)}
+.pc-fe-save{background:#0b76b7;border-color:#0b76b7}
+.pc-fe-save.dirty{background:#b45309;border-color:#b45309;color:#fff}
+.pc-fe-ai.is-unconfigured{border-style:dashed}
+.pc-fe-ai.is-loading .pc-fe-icon{animation:pc-fe-pulse 1s ease-in-out infinite}
+.pc-fe-button:disabled{background:#e5e7eb;color:#6b7280;border-color:#d1d5db;cursor:not-allowed;box-shadow:none}
+.pc-drop{padding:.75rem;border:2px dashed #e5e7eb;border-radius:.5rem;margin:.5rem 0;display:flex;gap:.5rem;align-items:center;justify-content:center}
+.pc-add{all:unset;background:#0ea5e9;color:#fff;padding:.25rem .5rem;border-radius:.375rem;cursor:pointer}
 .pc-add:hover{background:#0284c7}
 .pc-fe-image-host{position:relative}
 .pc-fe-image{outline:2px solid rgba(11,118,183,.35);outline-offset:4px}
@@ -29,3 +41,37 @@
 .pc-fe-drag-handle,.pc-fe-move-button{width:34px;height:30px;padding:0;display:inline-flex;align-items:center;justify-content:center;border:1px solid rgba(17,24,39,.16);border-radius:6px;background:#fff;color:#111827;font:800 11px/1 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;cursor:pointer}
 .pc-fe-drag-handle{cursor:grab}
 .pc-fe-drag-handle:hover,.pc-fe-move-button:hover{border-color:#0b76b7;color:#0b76b7;box-shadow:0 0 0 3px rgba(14,165,233,.18)}
+.pc-fe-drawer-open{overflow:hidden}
+.pc-fe-drawer-backdrop{position:fixed;inset:0;z-index:100001;background:rgba(15,23,42,.44);opacity:0;transition:opacity .18s ease}
+.pc-fe-drawer-backdrop.is-open{opacity:1}
+.pc-fe-drawer{position:fixed;top:0;right:0;bottom:0;z-index:100002;width:min(760px,92vw);display:flex;flex-direction:column;background:#fff;color:#111827;border-left:1px solid #d1d5db;box-shadow:-18px 0 48px rgba(15,23,42,.28);transform:translateX(100%);transition:transform .18s ease;font:500 14px/1.5 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+.pc-fe-drawer,.pc-fe-drawer *{box-sizing:border-box}
+.pc-fe-drawer p,.pc-fe-drawer fieldset,.pc-fe-drawer legend,.pc-fe-drawer h2{margin-block-start:0;margin-block-end:0;letter-spacing:0;text-transform:none}
+.pc-fe-drawer[hidden],.pc-fe-drawer-backdrop[hidden]{display:none}
+.pc-fe-drawer.is-open{transform:translateX(0)}
+.pc-fe-drawer-header{min-height:70px;padding:1rem 1.25rem;display:flex;align-items:center;justify-content:space-between;gap:1rem;border-bottom:1px solid #e5e7eb;background:#fff}
+.pc-fe-drawer-kicker{display:block;color:#047857;font-size:11px;font-weight:800;letter-spacing:0;text-transform:uppercase}
+.pc-fe-drawer-title{margin:.15rem 0 0;color:#111827;font:750 20px/1.2 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;letter-spacing:0}
+.pc-fe-drawer-close{width:42px;height:42px;display:inline-flex;align-items:center;justify-content:center;border:1px solid #d1d5db;border-radius:6px;background:#fff;color:#111827;font:500 28px/1 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;cursor:pointer}
+.pc-fe-drawer-close:hover{border-color:#0b76b7;color:#0b76b7}
+.pc-fe-drawer-panel{min-height:0;flex:1;display:flex;flex-direction:column}
+.pc-fe-drawer-panel[hidden]{display:none}
+.pc-fe-drawer-hint{margin:0;padding:.75rem 1.25rem;border-bottom:1px solid #e5e7eb;background:#f3f4f6;color:#4b5563;font-size:13px}
+.pc-fe-record-frame{width:100%;min-height:0;flex:1;border:0;background:#111}
+.pc-fe-ai-panel{padding:1.25rem;gap:1rem;background:#f8fafc}
+.pc-fe-ai-panel .pc-fe-drawer-hint{padding:0;border:0;background:transparent}
+.pc-fe-ai-config{padding:.75rem;border:1px solid #a7f3d0;border-radius:6px;background:#ecfdf5;color:#065f46;font-weight:700}
+.pc-fe-ai-config[data-state="warning"]{border-color:#fed7aa;background:#fff7ed;color:#9a3412}
+.pc-fe-ai-actions{margin:0;padding:0;border:0;display:grid;grid-template-columns:repeat(3,1fr);gap:.5rem}
+.pc-fe-ai-actions legend{grid-column:1/-1;margin-bottom:.4rem;color:#374151;font-weight:800}
+.pc-fe-ai-action{min-height:44px;border:1px solid #d1d5db;border-radius:6px;background:#fff;color:#111827;font:700 14px/1.2 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;cursor:pointer}
+.pc-fe-ai-action:hover,.pc-fe-ai-action.active{border-color:#0b76b7;background:#eff6ff;color:#075985}
+.pc-fe-ai-field{padding:1rem;display:flex;align-items:center;justify-content:space-between;gap:1rem;border:1px solid #e5e7eb;border-radius:6px;background:#fff}
+.pc-fe-ai-field span{color:#6b7280}
+.pc-fe-drawer-primary{min-height:46px;padding:0 1rem;border:1px solid #047857;border-radius:6px;background:#047857;color:#fff;font:750 14px/1.2 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;cursor:pointer}
+.pc-fe-drawer-primary:hover{background:#065f46;border-color:#065f46}
+.pc-fe-drawer-primary:disabled{border-color:#d1d5db;background:#e5e7eb;color:#6b7280;cursor:not-allowed}
+@keyframes pc-fe-pulse{50%{opacity:.35}}
+@media (max-width:520px){.pc-fe-toolbar{right:.5rem;bottom:.5rem;width:calc(100vw - 1rem)}.pc-fe-toolbar-actions{display:grid;grid-template-columns:repeat(4,1fr)}.pc-fe-toolbar-divider{display:none}.pc-fe-button{width:100%;padding:0 .45rem}.pc-fe-toolbar-feedback{align-items:flex-start;flex-direction:column;gap:.2rem}.pc-fe-status{margin-left:0;text-align:left}.pc-fe-drawer{width:100vw}.pc-fe-ai-actions{grid-template-columns:1fr}.pc-fe-ai-field{align-items:flex-start;flex-direction:column;gap:.25rem}}
+@media (prefers-color-scheme:dark){.pc-fe-drawer{background:#111827;color:#f9fafb;border-left-color:#374151}.pc-fe-drawer-header{background:#111827;border-bottom-color:#374151}.pc-fe-drawer-title{color:#f9fafb}.pc-fe-drawer-close,.pc-fe-ai-action,.pc-fe-ai-field{background:#172033;color:#f9fafb;border-color:#4b5563}.pc-fe-drawer-hint{background:#172033;color:#d1d5db;border-bottom-color:#374151}.pc-fe-ai-panel{background:#0f172a}.pc-fe-ai-panel .pc-fe-drawer-hint{background:transparent}.pc-fe-ai-actions legend{color:#e5e7eb}.pc-fe-ai-field span{color:#9ca3af}.pc-fe-ai-action:hover,.pc-fe-ai-action.active{background:#0c4a6e;color:#e0f2fe;border-color:#38bdf8}.pc-fe-ai-config{background:#064e3b;color:#d1fae5;border-color:#047857}.pc-fe-ai-config[data-state="warning"]{background:#431407;color:#ffedd5;border-color:#c2410c}}
+@media (prefers-reduced-motion:reduce){.pc-fe-button,.pc-fe-ai.is-loading .pc-fe-icon,.pc-fe-drawer,.pc-fe-drawer-backdrop{transition:none;animation:none}}

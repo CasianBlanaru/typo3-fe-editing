@@ -41,8 +41,6 @@ class DropZoneViewHelper extends AbstractTagBasedViewHelper
     {
         parent::initializeArguments();
 
-        $this->registerUniversalTagAttributes();
-
         $this->registerArgument(
             'pid',
             'string',
@@ -78,33 +76,37 @@ class DropZoneViewHelper extends AbstractTagBasedViewHelper
     public function render(): string
     {
         $content = $this->renderChildren();
+        $content = is_string($content) ? $content : '';
+        $tagName = $this->stringArgument('tag', 'div');
+        $pid = $this->stringArgument('pid');
+        $colPos = $this->stringArgument('colPos', '0');
 
         // Check if backend user has permissions
         $beUser = $this->getBackendUser();
         if (!$beUser || !PermissionChecker::mayEditFrontend($beUser)) {
             // Return content without drop zone functionality
-            $this->tag->setTagName($this->arguments['tag']);
+            $this->tag->setTagName($tagName);
             $this->tag->setContent($content);
             return $this->tag->render();
         }
 
         // Check if user can create content elements
         if (!$beUser->check('tables_modify', 'tt_content')) {
-            $this->tag->setTagName($this->arguments['tag']);
+            $this->tag->setTagName($tagName);
             $this->tag->setContent($content);
             return $this->tag->render();
         }
 
         // Add drop zone attributes
-        $this->tag->setTagName($this->arguments['tag']);
+        $this->tag->setTagName($tagName);
         $this->tag->addAttribute('data-pc-dropzone', '');
-        $this->tag->addAttribute('data-target-pid', $this->arguments['pid']);
-        $this->tag->addAttribute('data-col-pos', $this->arguments['colPos']);
+        $this->tag->addAttribute('data-target-pid', $pid);
+        $this->tag->addAttribute('data-col-pos', $colPos);
         $this->tag->addAttribute('class', 'pc-drop');
         
         // Add button for creating new elements
-        $buttonText = htmlspecialchars($this->arguments['buttonText']);
-        $button = '<button type="button" class="pc-add" style="display: inline-block; padding: 0.5rem 1rem; background: #0EA5E9; color: white; border: none; border-radius: 0.25rem; cursor: pointer; margin-top: 0.5rem;">' . $buttonText . '</button>';
+        $buttonText = htmlspecialchars($this->stringArgument('buttonText', '+ Element hinzufügen'), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+        $button = '<button type="button" class="pc-add">' . $buttonText . '</button>';
         
         $this->tag->setContent($content . $button);
         return $this->tag->render();
@@ -115,6 +117,13 @@ class DropZoneViewHelper extends AbstractTagBasedViewHelper
      */
     protected function getBackendUser(): ?BackendUserAuthentication
     {
-        return $GLOBALS['BE_USER'] ?? null;
+        $backendUser = $GLOBALS['BE_USER'] ?? null;
+        return $backendUser instanceof BackendUserAuthentication ? $backendUser : null;
+    }
+
+    private function stringArgument(string $name, string $default = ''): string
+    {
+        $value = $this->arguments[$name] ?? $default;
+        return is_scalar($value) ? (string)$value : $default;
     }
 }

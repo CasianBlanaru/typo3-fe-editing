@@ -13,9 +13,11 @@ final class AfterSaveEvent
     private string $field;
     private string $content;
     private int $uid;
+    /** @var array<string, mixed> */
     private array $record;
     private bool $success;
 
+    /** @param array<string, mixed> $record */
     public function __construct(string $table, string $field, string $content, int $uid, array $record = [], bool $success = true)
     {
         $this->table = $table;
@@ -46,6 +48,7 @@ final class AfterSaveEvent
         return $this->uid;
     }
 
+    /** @return array<string, mixed> */
     public function getRecord(): array
     {
         return $this->record;

@@ -7,12 +7,26 @@
         let editMode = false;
         const editToggle = document.getElementById('pc-edit-toggle');
         const saveButton = document.getElementById('pc-save');
+        const aiButton = document.getElementById('pc-ai');
         const addGlobal = document.getElementById('pc-add-global');
         const status = document.getElementById('pc-fe-status');
+        const selection = document.getElementById('pc-fe-selection');
+        const drawer = document.getElementById('pc-fe-drawer');
+        const drawerBackdrop = document.getElementById('pc-fe-drawer-backdrop');
+        const drawerClose = document.getElementById('pc-fe-drawer-close');
+        const drawerTitle = document.getElementById('pc-fe-drawer-title');
+        const imagePanel = document.getElementById('pc-fe-image-panel');
+        const aiPanel = document.getElementById('pc-fe-ai-panel');
+        const recordFrame = document.getElementById('pc-fe-record-frame');
+        const aiConfig = document.getElementById('pc-fe-ai-config');
+        const aiFieldName = document.getElementById('pc-fe-ai-field-name');
+        const aiRun = document.getElementById('pc-fe-ai-run');
         const dirtyFields = new Map();
         let saveTimer = null;
         let activeEditable = null;
         let draggedFrame = null;
+        let drawerTrigger = null;
+        let aiAction = 'rewrite';
 
         updateToolbarState();
 
@@ -29,6 +43,11 @@
                     el.dataset.pcOriginalValue = getFieldValue(el);
                 }
             });
+            if (!on) {
+                setActiveEditable(null);
+            } else {
+                updateSelectionState();
+            }
             document.querySelectorAll('.pc-fe-image-edit-button').forEach(button => {
                 button.hidden = !on;
             });
@@ -48,8 +67,13 @@
         }
 
         function markContentFields() {
-            document.querySelectorAll('[id^="c"]').forEach(frame => {
-                const uid = parseInt((frame.id || '').slice(1), 10);
+            document.querySelectorAll('[id^="c"], [data-content-element-uid], [data-table="tt_content"][data-uid], .frame[data-uid]').forEach(frame => {
+                const uid = parseInt(
+                    frame.dataset.contentElementUid
+                    || frame.dataset.uid
+                    || (frame.id || '').replace(/^c/, ''),
+                    10
+                );
                 if (!uid || frame.closest('.pc-fe-toolbar')) return;
                 markFrame(frame, uid);
 
@@ -168,6 +192,7 @@
                 button.type = 'button';
                 button.className = 'pc-fe-image-edit-button';
                 button.dataset.editUrl = record.editUrl || '';
+                button.title = 'Bild und Datensatz bearbeiten';
                 button.hidden = !editMode;
                 button.innerHTML = createIconMarkup('edit') + 'Bild';
                 host.appendChild(button);
@@ -198,6 +223,11 @@
             saveButton.disabled = !dirty;
             saveButton.classList.toggle('dirty', dirty);
             saveButton.classList.toggle('has-unsaved-changes', dirty);
+            const label = saveButton.querySelector('span');
+            if (label) {
+                label.textContent = dirty ? 'Save *' : 'Save';
+                return;
+            }
             const textNode = Array.from(saveButton.childNodes).find(node => node.nodeType === Node.TEXT_NODE);
             if (textNode) {
                 textNode.textContent = dirty ? 'Save *' : 'Save';
@@ -217,21 +247,20 @@
             if (activeEditable && activeEditable.isConnected && activeEditable.dataset.pcField) {
                 return activeEditable;
             }
-            return document.querySelector('[data-pc-field][contenteditable="true"]');
+            return document.activeElement?.closest?.('[data-pc-field][contenteditable="true"]') || null;
         }
 
-        async function applyAiPolish(element) {
+        async function applyAiPolish(element, action = 'rewrite') {
             const text = normalizeText(element.innerText || element.textContent || '');
-            if (!text) return false;
+            if (!text) return { ok: false, error: 'empty_text' };
 
             const result = await requestAiSuggestion({
                 text: element.dataset.field === 'header' ? text : element.innerHTML,
                 field: element.dataset.field || 'bodytext',
-                action: 'rewrite'
+                action
             });
             if (!result || !result.ok || !result.text) {
-                setStatus(result && result.error === 'openai_api_key_missing' ? 'OPENAI_API_KEY fehlt' : 'AI fehlgeschlagen', 'warning');
-                return false;
+                return result || { ok: false, error: 'ai_request_failed' };
             }
 
             if (element.dataset.field === 'header') {
@@ -239,20 +268,152 @@
             } else {
                 element.innerHTML = result.text;
             }
-            return true;
+            return { ok: true };
         }
 
-        function setStatus(message, type) {
+        function setStatus(message, type, persistent) {
             if (!status) return;
             status.textContent = message || '';
             status.dataset.state = type || '';
-            if (message) {
+            if (message && !persistent) {
                 window.setTimeout(() => {
                     if (status.textContent === message) {
                         status.textContent = '';
                         status.dataset.state = '';
                     }
                 }, 4000);
+            }
+        }
+
+        function setActiveEditable(element) {
+            document.querySelectorAll('.pc-fe-selected').forEach(field => {
+                field.classList.remove('pc-fe-selected');
+            });
+            activeEditable = element && element.dataset.pcField ? element : null;
+            activeEditable?.classList.add('pc-fe-selected');
+            updateSelectionState();
+        }
+
+        function updateSelectionState() {
+            if (!selection) return;
+            if (!editMode) {
+                selection.textContent = 'Editieren aktivieren';
+                selection.dataset.state = '';
+            } else if (!activeEditable) {
+                selection.textContent = 'Textfeld auswählen';
+                selection.dataset.state = 'waiting';
+            } else {
+                selection.textContent = activeEditable.dataset.field === 'header' ? 'Überschrift ausgewählt' : 'Text ausgewählt';
+                selection.dataset.state = 'selected';
+            }
+            updateAiPanel();
+        }
+
+        function getAiErrorMessage(error) {
+            return {
+                openai_api_key_missing: 'AI-Provider ist noch nicht konfiguriert',
+                empty_text: 'Das ausgewählte Feld ist leer',
+                auth_required: 'Backend-Anmeldung erforderlich',
+                no_modify_permission: 'Keine Berechtigung für AI-Bearbeitung',
+                invalid_token: 'Sitzung abgelaufen, Seite neu laden',
+                openai_request_failed: 'AI-Dienst derzeit nicht erreichbar'
+            }[error] || 'AI-Vorschlag konnte nicht erstellt werden';
+        }
+
+        function setAiBusy(busy) {
+            if (!aiButton) return;
+            aiButton.disabled = busy;
+            aiButton.classList.toggle('is-loading', busy);
+            aiButton.setAttribute('aria-busy', busy ? 'true' : 'false');
+            if (aiRun) {
+                aiRun.disabled = busy || TYPO3?.settings?.feEditorAiConfigured !== true || !getActiveEditable();
+                aiRun.textContent = busy ? 'AI arbeitet...' : 'AI-Vorschlag erstellen';
+            }
+        }
+
+        function updateAiPanel() {
+            if (!aiConfig || !aiFieldName || !aiRun) return;
+            const configured = TYPO3?.settings?.feEditorAiConfigured === true;
+            const field = getActiveEditable();
+            aiConfig.textContent = configured
+                ? (TYPO3.settings.feEditorAiProvider + ' ist konfiguriert und bereit.')
+                : 'AI ist nicht konfiguriert. Provider und API-Key unter TYPO3 Einstellungen > Extension Configuration hinterlegen.';
+            aiConfig.dataset.state = configured ? 'ready' : 'warning';
+            aiFieldName.textContent = field
+                ? (field.dataset.field === 'header' ? 'Überschrift' : 'Textinhalt')
+                : 'Kein Feld ausgewählt';
+            aiRun.disabled = !configured || !field;
+        }
+
+        function openDrawer(type, trigger, url) {
+            if (!drawer || !drawerBackdrop || !drawerTitle) return;
+            drawerTrigger = trigger || document.activeElement;
+            imagePanel.hidden = type !== 'image';
+            aiPanel.hidden = type !== 'ai';
+            drawerTitle.textContent = type === 'image' ? 'Bild und Datensatz bearbeiten' : 'AI-Schreibassistent';
+            if (type === 'image' && recordFrame) {
+                recordFrame.src = url;
+            }
+            if (type === 'ai') {
+                updateAiPanel();
+            }
+            drawer.hidden = false;
+            drawerBackdrop.hidden = false;
+            Array.from(document.body.children).forEach(element => {
+                if (element !== drawer && element !== drawerBackdrop && !['SCRIPT', 'LINK'].includes(element.tagName)) {
+                    element.inert = true;
+                    element.dataset.pcDrawerInert = '1';
+                }
+            });
+            document.body.classList.add('pc-fe-drawer-open');
+            window.requestAnimationFrame(() => {
+                drawer.classList.add('is-open');
+                drawerBackdrop.classList.add('is-open');
+                drawerClose?.focus();
+            });
+        }
+
+        function closeDrawer() {
+            if (!drawer || drawer.hidden) return;
+            drawer.classList.remove('is-open');
+            drawerBackdrop?.classList.remove('is-open');
+            document.querySelectorAll('[data-pc-drawer-inert="1"]').forEach(element => {
+                element.inert = false;
+                delete element.dataset.pcDrawerInert;
+            });
+            document.body.classList.remove('pc-fe-drawer-open');
+            window.setTimeout(() => {
+                drawer.hidden = true;
+                if (drawerBackdrop) drawerBackdrop.hidden = true;
+                if (recordFrame) recordFrame.src = 'about:blank';
+                drawerTrigger?.focus?.();
+            }, 180);
+        }
+
+        async function runAiAction() {
+            const el = getActiveEditable();
+            if (!el) {
+                setStatus('Zuerst ein markiertes Textfeld auswählen', 'warning');
+                updateAiPanel();
+                return;
+            }
+            setAiBusy(true);
+            setStatus('AI verbessert den ausgewählten Text...', 'info', true);
+            let result;
+            try {
+                result = await applyAiPolish(el, aiAction);
+            } catch (error) {
+                console.error('AI processing failed', error);
+                result = { ok: false, error: 'openai_request_failed' };
+            } finally {
+                setAiBusy(false);
+            }
+            if (result.ok) {
+                markDirty(el);
+                closeDrawer();
+                setStatus('AI-Vorschlag bereit und noch nicht gespeichert', 'success');
+            } else {
+                setStatus(getAiErrorMessage(result.error), 'warning', result.error === 'openai_api_key_missing');
             }
         }
 
@@ -277,6 +438,13 @@
                     ? 'Neues Element hinzufuegen'
                     : 'Keine Zielseite fuer neue Elemente gefunden';
             }
+            if (aiButton) {
+                const configured = TYPO3?.settings?.feEditorAiConfigured === true;
+                aiButton.classList.toggle('is-unconfigured', !configured);
+                aiButton.title = configured
+                    ? 'Ausgewählten Text mit AI verbessern'
+                    : 'AI konfigurieren: OPENAI_API_KEY fehlt';
+            }
             if (!canEdit && !canAdd) {
                 setStatus('Keine FE-Edit Marker', 'warning');
             }
@@ -292,7 +460,8 @@
                 editMode = !editMode;
                 setEditable(editMode);
                 e.target.closest('#pc-edit-toggle').classList.toggle('active', editMode);
-                setStatus(editMode ? 'Edit an' : 'Edit aus', 'info');
+                e.target.closest('#pc-edit-toggle').setAttribute('aria-pressed', editMode ? 'true' : 'false');
+                setStatus(editMode ? 'Bearbeitung aktiv' : 'Bearbeitung beendet', 'info');
             }
             if (e.target.closest('#pc-save')) {
                 await saveDirtyFields();
@@ -311,8 +480,13 @@
                 const button = e.target.closest('.pc-fe-image-edit-button');
                 const editUrl = button ? button.dataset.editUrl : '';
                 if (editUrl) {
-                    window.open(editUrl, '_blank', 'noopener');
-                    setStatus('Bild im Backend bearbeiten', 'info');
+                    if (e.ctrlKey || e.metaKey) {
+                        window.open(editUrl, '_blank', 'noopener,noreferrer');
+                        setStatus('Datensatzeditor im neuen Tab geöffnet', 'info');
+                    } else {
+                        openDrawer('image', button, editUrl);
+                        setStatus('Datensatzeditor geöffnet', 'info');
+                    }
                 } else {
                     setStatus('Keine Bild-URL', 'warning');
                 }
@@ -321,16 +495,33 @@
                 if (!editMode) {
                     editMode = true;
                     setEditable(true);
-                    editToggle && editToggle.classList.toggle('active', true);
+                    if (editToggle) {
+                        editToggle.classList.toggle('active', true);
+                        editToggle.setAttribute('aria-pressed', 'true');
+                    }
                 }
                 const el = getActiveEditable();
-                setStatus('AI arbeitet...', 'info');
-                if (el && await applyAiPolish(el)) {
-                    markDirty(el);
-                    setStatus('AI Vorschlag bereit', 'success');
-                } else {
-                    setStatus('Kein editierbares Feld', 'warning');
+                if (!el) {
+                    setStatus('Zuerst ein markiertes Textfeld auswählen', 'warning');
+                    document.querySelector('[data-pc-field][contenteditable="true"]')?.focus();
+                    return;
                 }
+                openDrawer('ai', aiButton);
+            }
+            if (e.target.closest('#pc-fe-drawer-close') || e.target.closest('#pc-fe-drawer-backdrop')) {
+                closeDrawer();
+            }
+            if (e.target.closest('.pc-fe-ai-action')) {
+                const button = e.target.closest('.pc-fe-ai-action');
+                aiAction = button.dataset.pcAiAction || 'rewrite';
+                document.querySelectorAll('.pc-fe-ai-action').forEach(actionButton => {
+                    const active = actionButton === button;
+                    actionButton.classList.toggle('active', active);
+                    actionButton.setAttribute('aria-pressed', active ? 'true' : 'false');
+                });
+            }
+            if (e.target.closest('#pc-fe-ai-run')) {
+                await runAiAction();
             }
             if (e.target.closest('.pc-add')) {
                 const z = e.target.closest('[data-pc-dropzone]');
@@ -363,14 +554,57 @@
         document.addEventListener('focusin', (e) => {
             const el = e.target.closest && e.target.closest('[data-pc-field]');
             if (el) {
-                activeEditable = el;
+                setActiveEditable(el);
+            }
+        });
+
+        document.addEventListener('pointerdown', (e) => {
+            const el = e.target.closest && e.target.closest('[data-pc-field]');
+            if (el && editMode) {
+                setActiveEditable(el);
+            }
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (!drawer || drawer.hidden) return;
+            if (e.key === 'Escape') {
+                e.preventDefault();
+                closeDrawer();
+                return;
+            }
+            if (e.key !== 'Tab') return;
+            const focusable = Array.from(drawer.querySelectorAll('button:not([disabled]), iframe, [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'))
+                .filter(element => element.offsetParent !== null);
+            if (focusable.length === 0) return;
+            const first = focusable[0];
+            const last = focusable[focusable.length - 1];
+            if (e.shiftKey && document.activeElement === first) {
+                e.preventDefault();
+                last.focus();
+            } else if (!e.shiftKey && document.activeElement === last) {
+                e.preventDefault();
+                first.focus();
+            }
+        });
+
+        window.addEventListener('message', (event) => {
+            if (event.origin !== window.location.origin || !event.data?.actionName) return;
+            if (event.data.actionName === 'typo3:editform:saved') {
+                setStatus('Gespeichert, Vorschau wird aktualisiert...', 'success', true);
+                closeDrawer();
+                window.setTimeout(() => window.location.reload(), 250);
+            } else if (event.data.actionName === 'typo3:editform:closed') {
+                closeDrawer();
+            } else if (event.data.actionName === 'typo3:editform:navigate') {
+                closeDrawer();
+                window.location.reload();
             }
         });
 
         document.addEventListener('input', (e) => {
             const el = e.target.closest && e.target.closest('[data-pc-field]');
             if (!el || !editMode) return;
-            activeEditable = el;
+            setActiveEditable(el);
             markDirty(el);
             setStatus('Ungespeichert', 'info');
         });
@@ -574,22 +808,28 @@
             console.error('PixelCoda FE Editor: missing aiUrl or formToken');
             return { ok: false, error: 'missing_ai_url_or_token' };
         }
-        const res = await fetch(url, {
-            method: 'POST',
-            credentials: 'same-origin',
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-                'X-Requested-With': 'XMLHttpRequest'
-            },
-            body: new URLSearchParams({
-                text,
-                field,
-                action,
-                formToken
-            })
-        });
+        let res;
+        try {
+            res = await fetch(url, {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: new URLSearchParams({
+                    text,
+                    field,
+                    action,
+                    formToken
+                })
+            });
+        } catch (error) {
+            console.error('AI request failed', error);
+            return { ok: false, error: 'openai_request_failed' };
+        }
         const json = await parseJsonResponse(res);
-        if (!res.ok || !json.ok) {
+        if ((!res.ok || !json.ok) && json.error !== 'openai_api_key_missing') {
             console.error('AI failed', json.error || json.message || 'Unknown error');
         }
         return json;

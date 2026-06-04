@@ -13,8 +13,10 @@ final class BeforeSaveEvent
     private string $field;
     private string $content;
     private int $uid;
+    /** @var array<string, mixed> */
     private array $record;
 
+    /** @param array<string, mixed> $record */
     public function __construct(string $table, string $field, string $content, int $uid, array $record = [])
     {
         $this->table = $table;
@@ -49,11 +51,13 @@ final class BeforeSaveEvent
         return $this->uid;
     }
 
+    /** @return array<string, mixed> */
     public function getRecord(): array
     {
         return $this->record;
     }
 
+    /** @param array<string, mixed> $record */
     public function setRecord(array $record): void
     {
         $this->record = $record;
