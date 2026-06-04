@@ -2,13 +2,13 @@
 
 Accessible frontend editing for TYPO3 12 LTS, TYPO3 13 LTS and TYPO3 14. Edit content directly on the rendered website with inline text editing, drag-and-drop sorting, contextual FormEngine records, image editing, headless-ready markers and an optional AI writing assistant.
 
-> Status: stable. Version 1.1.1 supports TYPO3 12 LTS, TYPO3 13 LTS and TYPO3 14.
+> Status: stable. Version 1.2.0 supports TYPO3 12 LTS, TYPO3 13 LTS and TYPO3 14.
 
 ![Pixelcoda TYPO3 frontend editing overview](Documentation/Images/editor-overview.png)
 
 ## Features
 
-- Frontend toolbar for authenticated TYPO3 backend users.
+- Responsive rounded action rail for authenticated TYPO3 backend users, with accessible contextual tooltips.
 - Inline editing for `tt_content.header`, `bodytext` and related text fields.
 - Autosave and manual save through TYPO3 `DataHandler`.
 - CSRF protection through TYPO3 backend `FormProtection`.

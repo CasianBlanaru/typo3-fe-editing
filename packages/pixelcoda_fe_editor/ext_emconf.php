@@ -6,7 +6,7 @@ $EM_CONF[$_EXTKEY] = [
   'state' => 'stable',
   'author' => 'PixelCoda',
   'author_email' => '',
-  'version' => '1.1.1',
+  'version' => '1.2.0',
   'icon' => 'EXT:pixelcoda_fe_editor/Resources/Public/Icons/ext-icon.svg',
   'constraints' => [
     'depends' => ['typo3' => '12.4.0-14.9.99']

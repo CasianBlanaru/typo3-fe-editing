@@ -4,7 +4,7 @@ Accessible, premium frontend editing for TYPO3 12 LTS, TYPO3 13 LTS and TYPO3 14
 
 Edit TYPO3 content directly on the rendered website with inline text editing, drag-and-drop sorting, contextual FormEngine records, image editing, headless-ready markers and an optional AI writing assistant.
 
-> Stable release: `v1.1.1` · Extension key: `pixelcoda_fe_editor` · Composer package: `pixelcoda/fe-editor`
+> Stable release: `v1.2.0` · Extension key: `pixelcoda_fe_editor` · Composer package: `pixelcoda/fe-editor`
 
 ![Pixelcoda TYPO3 frontend editing overview](packages/pixelcoda_fe_editor/Documentation/Images/editor-overview.png)
 

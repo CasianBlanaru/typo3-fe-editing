@@ -107,11 +107,11 @@ final class FrontendEditOverlay implements MiddlewareInterface
 <link rel="stylesheet" href="{$cssPath}">
 <div id="pc-fe-toolbar-root" class="pc-fe-toolbar" role="toolbar" aria-label="Frontend Editing">
   <div class="pc-fe-toolbar-actions">
-    <button id="pc-edit-toggle" class="pc-fe-button" type="button" title="Frontend Editing aktivieren" aria-pressed="false"><img class="pc-fe-icon" src="{$editIconHtmlPath}" alt="" onerror="this.hidden=true"><span>Edit</span></button>
-    <button id="pc-save" class="pc-fe-button pc-fe-save" type="button" title="Aenderungen speichern" disabled><img class="pc-fe-icon" src="{$editIconHtmlPath}" alt="" onerror="this.hidden=true"><span>Save</span></button>
+    <button id="pc-edit-toggle" class="pc-fe-button" type="button" data-label="Frontend Editing aktivieren" aria-label="Frontend Editing aktivieren" aria-pressed="false"><img class="pc-fe-icon" src="{$editIconHtmlPath}" alt="" onerror="this.hidden=true"><span>Edit</span></button>
+    <button id="pc-save" class="pc-fe-button pc-fe-save" type="button" data-label="Änderungen speichern" aria-label="Änderungen speichern" disabled><img class="pc-fe-icon" src="{$editIconHtmlPath}" alt="" onerror="this.hidden=true"><span>Save</span></button>
     <span class="pc-fe-toolbar-divider" aria-hidden="true"></span>
-    <button id="pc-ai" class="pc-fe-button pc-fe-ai" type="button" title="Ausgewaehlten Text mit AI verbessern"><img class="pc-fe-icon" src="{$aiIconHtmlPath}" alt="" onerror="this.hidden=true"><span>AI</span></button>
-    <button id="pc-add-global" class="pc-fe-button pc-fe-icon-button" type="button" title="Neues Element hinzufuegen" aria-label="Neues Element hinzufuegen"><img class="pc-fe-icon" src="{$addIconHtmlPath}" alt="" onerror="this.hidden=true"></button>
+    <button id="pc-ai" class="pc-fe-button pc-fe-ai" type="button" data-label="AI-Schreibassistent öffnen" aria-label="AI-Schreibassistent öffnen"><img class="pc-fe-icon" src="{$aiIconHtmlPath}" alt="" onerror="this.hidden=true"><span>AI</span></button>
+    <button id="pc-add-global" class="pc-fe-button pc-fe-icon-button" type="button" data-label="Neues Element hinzufügen" aria-label="Neues Element hinzufügen"><img class="pc-fe-icon" src="{$addIconHtmlPath}" alt="" onerror="this.hidden=true"></button>
   </div>
   <div class="pc-fe-toolbar-feedback">
     <span id="pc-fe-selection" class="pc-fe-selection">Editieren aktivieren</span>
@@ -168,7 +168,11 @@ HTML;
 
     private function getAssetWebPath(string $assetPath): string
     {
-        return PathUtility::getAbsoluteWebPath(GeneralUtility::getFileAbsFileName($assetPath));
+        $absolutePath = GeneralUtility::getFileAbsFileName($assetPath);
+        $webPath = PathUtility::getAbsoluteWebPath($absolutePath);
+        $modifiedAt = filemtime($absolutePath);
+
+        return $modifiedAt === false ? $webPath : $webPath . '?v=' . $modifiedAt;
     }
 
     private function getPageId(ServerRequestInterface $request): int

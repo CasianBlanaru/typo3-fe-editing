@@ -331,12 +331,19 @@
             scheduleAutosave();
         }
 
+        function setButtonLabel(button, label) {
+            if (!button) return;
+            button.dataset.label = label;
+            button.setAttribute('aria-label', label);
+        }
+
         function updateSaveButton() {
             if (!saveButton) return;
             const dirty = dirtyFields.size > 0;
             saveButton.disabled = !dirty;
             saveButton.classList.toggle('dirty', dirty);
             saveButton.classList.toggle('has-unsaved-changes', dirty);
+            setButtonLabel(saveButton, dirty ? 'Änderungen speichern' : 'Keine ungespeicherten Änderungen');
             const label = saveButton.querySelector('span');
             if (label) {
                 label.textContent = dirty ? 'Save *' : 'Save';
@@ -544,22 +551,22 @@
 
             if (editToggle) {
                 editToggle.disabled = !canEdit;
-                editToggle.title = canEdit
-                    ? 'Frontend Editing aktivieren'
-                    : 'Keine editierbaren Felder auf dieser Seite gefunden';
+                setButtonLabel(editToggle, canEdit
+                    ? (editMode ? 'Frontend Editing deaktivieren' : 'Frontend Editing aktivieren')
+                    : 'Keine editierbaren Felder auf dieser Seite gefunden');
             }
             if (addGlobal) {
                 addGlobal.disabled = !canAdd;
-                addGlobal.title = canAdd
-                    ? 'Neues Element hinzufuegen'
-                    : 'Keine Zielseite fuer neue Elemente gefunden';
+                setButtonLabel(addGlobal, canAdd
+                    ? 'Neues Element hinzufügen'
+                    : 'Keine Zielseite für neue Elemente gefunden');
             }
             if (aiButton) {
                 const configured = TYPO3?.settings?.feEditorAiConfigured === true;
                 aiButton.classList.toggle('is-unconfigured', !configured);
-                aiButton.title = configured
+                setButtonLabel(aiButton, configured
                     ? 'Ausgewählten Text mit AI verbessern'
-                    : 'AI konfigurieren: OPENAI_API_KEY fehlt';
+                    : 'AI konfigurieren: OPENAI_API_KEY fehlt');
             }
             if (!canEdit && !canAdd) {
                 setStatus('Keine FE-Edit Marker', 'warning');
@@ -580,6 +587,7 @@
                 setEditable(editMode);
                 e.target.closest('#pc-edit-toggle').classList.toggle('active', editMode);
                 e.target.closest('#pc-edit-toggle').setAttribute('aria-pressed', editMode ? 'true' : 'false');
+                setButtonLabel(editToggle, editMode ? 'Frontend Editing deaktivieren' : 'Frontend Editing aktivieren');
                 setStatus(editMode ? 'Bearbeitung aktiv' : 'Bearbeitung beendet', 'info');
             }
             if (e.target.closest('#pc-save')) {
@@ -632,6 +640,7 @@
                     if (editToggle) {
                         editToggle.classList.toggle('active', true);
                         editToggle.setAttribute('aria-pressed', 'true');
+                        setButtonLabel(editToggle, 'Frontend Editing deaktivieren');
                     }
                 }
                 const el = getActiveEditable();

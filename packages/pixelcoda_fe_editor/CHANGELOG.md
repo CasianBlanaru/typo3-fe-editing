@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.2.0 - 2026-06-04
+
+- Rebuilt the frontend toolbar as a compact rounded action rail for desktop and mobile.
+- Added accessible contextual tooltips with synchronized ARIA labels and state-aware actions.
+- Replaced the ambiguous AI icon with a dedicated Sparkles symbol.
+- Added cache-busting asset URLs so updated toolbar assets appear immediately after deployment.
+- Improved toolbar light/dark mode, focus states and responsive layout without changing editing APIs.
+
 ## 1.1.1 - 2026-06-04
 
 - Improved GitHub, Composer and TYPO3 extension descriptions for discoverability.
