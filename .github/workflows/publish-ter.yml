@@ -1,0 +1,114 @@
+name: Publish extension to TER
+
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Version to publish without the leading v
+        required: true
+        type: string
+      register_key:
+        description: Register pixelcoda_fe_editor before the first publication
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    name: Publish pixelcoda_fe_editor
+    runs-on: ubuntu-latest
+    env:
+      EXTENSION_KEY: pixelcoda_fe_editor
+      EXTENSION_PATH: packages/pixelcoda_fe_editor
+      TYPO3_API_TOKEN: ${{ secrets.TYPO3_API_TOKEN }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Resolve release version
+        id: version
+        shell: bash
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            version="${{ inputs.version }}"
+          else
+            version="${GITHUB_REF_NAME#v}"
+          fi
+          if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Invalid semantic version: $version" >&2
+            exit 1
+          fi
+          echo "value=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Validate extension metadata
+        shell: bash
+        run: |
+          php -r '
+            $composer = json_decode(file_get_contents(getenv("EXTENSION_PATH") . "/composer.json"), true, 512, JSON_THROW_ON_ERROR);
+            $key = $composer["extra"]["typo3/cms"]["extension-key"] ?? "";
+            if ($key !== getenv("EXTENSION_KEY")) {
+                fwrite(STDERR, "Unexpected extension key: " . $key . PHP_EOL);
+                exit(1);
+            }
+          '
+          grep -Fq "'version' => '${{ steps.version.outputs.value }}'" "$EXTENSION_PATH/ext_emconf.php"
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: intl, mbstring, zip, curl
+          tools: composer:v2
+
+      - name: Install TYPO3 Tailor
+        run: composer global require typo3/tailor:^1.7 --prefer-dist --no-progress --no-interaction
+
+      - name: Build TER artefact
+        run: |
+          ~/.composer/vendor/bin/tailor create-artefact "${{ steps.version.outputs.value }}" "$EXTENSION_KEY" \
+            --path="$EXTENSION_PATH"
+
+      - name: Upload validated TER artefact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.EXTENSION_KEY }}-${{ steps.version.outputs.value }}
+          path: tailor-version-artefact/${{ env.EXTENSION_KEY }}_${{ steps.version.outputs.value }}.zip
+          if-no-files-found: error
+
+      - name: Explain missing TER token
+        if: env.TYPO3_API_TOKEN == ''
+        run: |
+          echo "::notice::TER artefact validated. Add the TYPO3_API_TOKEN repository secret and rerun this workflow to publish it."
+
+      - name: Register TER extension key
+        if: env.TYPO3_API_TOKEN != '' && github.event_name == 'workflow_dispatch' && inputs.register_key
+        run: ~/.composer/vendor/bin/tailor ter:register "$EXTENSION_KEY"
+
+      - name: Check existing TER version
+        id: ter-version
+        if: env.TYPO3_API_TOKEN != ''
+        continue-on-error: true
+        run: ~/.composer/vendor/bin/tailor ter:version "${{ steps.version.outputs.value }}" "$EXTENSION_KEY"
+
+      - name: Publish to TER
+        if: env.TYPO3_API_TOKEN != '' && steps.ter-version.outcome == 'failure'
+        run: |
+          ~/.composer/vendor/bin/tailor ter:publish "${{ steps.version.outputs.value }}" "$EXTENSION_KEY" \
+            --path="$EXTENSION_PATH" \
+            --comment="Stable Pixelcoda FE Editor release ${{ steps.version.outputs.value }}"
+
+      - name: Update TER resource links
+        if: env.TYPO3_API_TOKEN != ''
+        run: |
+          ~/.composer/vendor/bin/tailor ter:update "$EXTENSION_KEY" \
+            --composer="pixelcoda/typo3-fe-editing" \
+            --issues="https://github.com/CasianBlanaru/pixelcoda-typo3-fe-editing/issues" \
+            --repository="https://github.com/CasianBlanaru/pixelcoda-typo3-fe-editing" \
+            --manual="https://github.com/CasianBlanaru/pixelcoda-typo3-fe-editing/blob/master/packages/pixelcoda_fe_editor/Documentation/Index.md"

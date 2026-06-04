@@ -1,0 +1,16 @@
+mod.wizards.newContentElement.wizardItems {
+    pixelcoda {
+        header = PixelCoda
+        elements {
+            pc_demo {
+                iconIdentifier = pixelcoda-fe-editor-demo
+                title = PixelCoda Demo (editable)
+                description = Demo content element with frontend editing capabilities
+                tt_content_defValues {
+                    CType = pc_demo
+                }
+            }
+        }
+        show = *
+    }
+}

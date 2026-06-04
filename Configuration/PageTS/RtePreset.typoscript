@@ -1,0 +1,24 @@
+RTE.default.preset = pixelcoda_fe_editor
+
+RTE.config.pixelcoda_fe_editor {
+    showButtons = bold,italic,underline,link,chMode,formatblock,inserttag,line,orderedlist,unorderedlist,outdent,indent,table,textstyle,textcolor,bgcolor,left,center,right,justify,findreplace,spellcheck,insertcharacter,removeformat,undo,redo,showhelp,about
+    hideButtons = *
+    showButtons := addToList(bold,italic,underline,link,chMode,formatblock,inserttag,line,orderedlist,unorderedlist,outdent,indent,table,textstyle,textcolor,bgcolor,left,center,right,justify,findreplace,spellcheck,insertcharacter,removeformat,undo,redo,showhelp,about)
+    
+    buttons {
+        bold {
+            tags.strong.allowedClasses = 
+        }
+        italic {
+            tags.em.allowedClasses = 
+        }
+        underline {
+            tags.u.allowedClasses = 
+        }
+    }
+    
+    proc {
+        allowTags = p,br,strong,em,u,a,ul,ol,li,table,tr,td,th,tbody,thead,h1,h2,h3,h4,h5,h6,blockquote,div,span
+        denyTags = script,object,embed,form,input,textarea,button,select,option
+    }
+}

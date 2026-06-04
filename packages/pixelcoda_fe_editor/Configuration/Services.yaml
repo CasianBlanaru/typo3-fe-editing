@@ -1,0 +1,5 @@
+services:
+  PixelCoda\FeEditor\:
+    resource: '../Classes/*'
+    autowire: true
+    autoconfigure: true

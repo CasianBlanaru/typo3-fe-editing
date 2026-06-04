@@ -1,0 +1,172 @@
+.content-icon {
+    width: 50px;
+    height: 50px;
+}
+
+.accordion-list .element:last-of-type {
+    border-bottom: 0;
+}
+
+.element {
+    display: inline-block;
+    margin-bottom: 10px;
+    position: relative;
+
+    .description {
+        width: 220px;
+        display: none;
+        margin-left: 5px;
+
+        .title-default {
+            display: inline-block;
+            width: 230px;
+            padding: 0;
+            line-height: 1.2;
+            color: $black;
+            font-size: $font-size-smaller;
+
+            &:first-of-type {
+                font-size: $font-size-smaller;
+                font-weight: bold;
+                padding-top: 4px;
+                color: $black;
+            }
+        }
+    }
+
+    div {
+        pointer-events: none;
+    }
+
+    span {
+        pointer-events: none;
+    }
+
+    &:hover {
+        outline: solid 2px $color-t3-primary;
+    }
+}
+
+.custom-record-tab {
+    .accordion {
+        .element-action {
+            padding: 6px 10px;
+        }
+    }
+
+    .element:hover {
+        cursor: pointer;
+    }
+}
+
+.wizard-elements-tabs .element:hover {
+    cursor: move;
+}
+
+.accordion {
+    .grid,
+    .list-view {
+        font-size: 32px;
+        position: relative;
+        top: 7px;
+        width: 24px;
+        display: inline-block;
+        cursor: pointer;
+        color: $t3-gray-divider;
+
+        &:hover,
+        &.active {
+            color: $black;
+        }
+    }
+
+    .trigger {
+        transform: rotate(0);
+        transition-duration: 0.2s;
+        transform-origin: center;
+        font-size: 26px;
+        position: relative;
+        top: 5px;
+        display: inline-block;
+        cursor: pointer;
+
+        &.active {
+            transform: rotate(180deg);
+            transition-duration: 0.2s;
+            transform-origin: center;
+        }
+    }
+
+    .element-title {
+        display: inline-block;
+        font-size: var(--bs-body-font-size);
+        padding: 3px 0;
+        max-width: 205px;
+        cursor: pointer;
+    }
+
+    .element-action {
+        text-align: right;
+        width: auto;
+        display: inline-block;
+        float: right;
+        padding: 2px 10px;
+    }
+}
+
+.accordion-grid {
+    .grid {
+        color: $black;
+    }
+
+    .accordion-content {
+        padding: 10px;
+    }
+}
+
+.accordion-list {
+    .description {
+        display: inline-block;
+    }
+
+    .element {
+        display: block;
+        background-color: $t3-gray;
+        margin: 0;
+        margin-bottom: 2px;
+        padding: 10px;
+        border-bottom: 1px solid $t3-gray-divider;
+
+        .content-icon {
+            vertical-align: top;
+            display: inline-block;
+            margin: 0 auto;
+
+            .icon-size-default {
+                height: 100%;
+                width: 100%;
+
+                .icon-markup {
+                    width: 50px;
+                    height: 50px;
+                    text-align: center;
+                    vertical-align: middle;
+                    display: block;
+                    margin: 0 auto;
+
+                    img {
+                        height: 40px;
+                        width: 40px;
+                        margin: 0 auto;
+                        top: 10%;
+                        position: relative;
+                    }
+                }
+            }
+        }
+    }
+
+    .list-view {
+        color: $black;
+    }
+}

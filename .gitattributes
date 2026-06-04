@@ -1,0 +1,5 @@
+packages/pixelcoda_fe_editor/Build/reports/** linguist-generated=true
+frontend_editing-master/** linguist-vendored=true
+
+*.typoscript linguist-language=TypoScript
+*.tsconfig linguist-language=TypoScript

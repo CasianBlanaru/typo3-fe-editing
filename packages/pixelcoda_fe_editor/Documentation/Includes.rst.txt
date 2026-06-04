@@ -1,0 +1,4 @@
+.. This file contains shared documentation substitutions.
+
+.. |extension_key| replace:: pixelcoda_fe_editor
+.. |package_name| replace:: pixelcoda/fe-editor

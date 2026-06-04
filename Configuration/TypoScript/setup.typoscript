@@ -1,0 +1,44 @@
+# PixelCoda FE Editor - TypoScript Setup
+
+# Register icon provider
+plugin.tx_pixelcodafeeditor {
+    settings {
+        # Extension settings
+    }
+}
+
+# Demo content element
+tt_content.pc_demo = FLUIDTEMPLATE
+tt_content.pc_demo {
+    templateName = PcDemo
+    templateRootPaths {
+        10 = EXT:pixelcoda_fe_editor/Resources/Private/Templates/
+    }
+    partialRootPaths {
+        10 = EXT:pixelcoda_fe_editor/Resources/Private/Partials/
+    }
+    layoutRootPaths {
+        10 = EXT:pixelcoda_fe_editor/Resources/Private/Layouts/
+    }
+    
+    dataProcessing {
+        10 = TYPO3\CMS\Frontend\DataProcessing\FlexFormProcessor
+    }
+    
+    variables {
+        content = TEXT
+        content {
+            field = bodytext
+            parseFunc = < lib.parseFunc_RTE
+        }
+    }
+}
+
+# Add CSS and JS to frontend
+page.includeCSS {
+    pixelcoda_fe_editor = EXT:pixelcoda_fe_editor/Resources/Public/CSS/editor.css
+}
+
+page.includeJSFooter {
+    pixelcoda_fe_editor = EXT:pixelcoda_fe_editor/Resources/Public/JavaScript/editor.js
+}

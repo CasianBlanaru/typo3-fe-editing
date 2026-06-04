@@ -1,0 +1,36 @@
+{
+  "name": "pixelcoda/fe-editor",
+  "description": "Accessible frontend editing for TYPO3 12/13/14 with inline editing, drag-and-drop, contextual records, headless support and optional AI.",
+  "keywords": [
+    "typo3",
+    "typo3-extension",
+    "frontend-editing",
+    "inline-editing",
+    "headless-cms",
+    "accessibility",
+    "drag-and-drop",
+    "ai"
+  ],
+  "type": "typo3-cms-extension",
+  "homepage": "https://extensions.typo3.org/extension/pixelcoda_fe_editor",
+  "license": "GPL-2.0-or-later",
+  "require": {
+    "typo3/cms-core": "^12.4 || ^13.4 || ^14.0",
+    "typo3/cms-rte-ckeditor": "^12.4 || ^13.4 || ^14.0"
+  },
+  "autoload": {
+    "psr-4": {
+      "PixelCoda\\FeEditor\\": "Classes/"
+    }
+  },
+  "support": {
+    "docs": "https://github.com/CasianBlanaru/pixelcoda-typo3-fe-editing/blob/master/packages/pixelcoda_fe_editor/Documentation/Index.md",
+    "issues": "https://github.com/CasianBlanaru/pixelcoda-typo3-fe-editing/issues",
+    "source": "https://github.com/CasianBlanaru/pixelcoda-typo3-fe-editing"
+  },
+  "extra": {
+    "typo3/cms": {
+      "extension-key": "pixelcoda_fe_editor"
+    }
+  }
+}

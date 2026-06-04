@@ -1,0 +1,30 @@
+services:
+  _defaults:
+    autowire: true
+    autoconfigure: true
+    public: false
+
+  PixelCoda\FeEditor\:
+    resource: '../Classes/*'
+    exclude:
+      - '../Classes/Domain/Model/*'
+      - '../Classes/Domain/Repository/*'
+
+  PixelCoda\FeEditor\Middleware\FrontendEditOverlay:
+    tags:
+      - name: 'psr-15.request-handler'
+        identifier: 'pixelcoda_fe_editor/overlay'
+
+  PixelCoda\FeEditor\Controller\SaveController:
+    public: true
+
+  PixelCoda\FeEditor\Service\TokenService:
+    public: true
+
+  PixelCoda\FeEditor\Service\PermissionChecker:
+    public: true
+
+  PixelCoda\FeEditor\Ai\NullProvider:
+    tags:
+      - name: 'pixelcoda_fe_editor.ai_provider'
+        identifier: 'null'

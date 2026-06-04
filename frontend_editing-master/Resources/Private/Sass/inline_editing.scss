@@ -1,0 +1,139 @@
+//
+// Frontend editing, inline editing Styles
+// ---------------
+// Description: Global styles for inline editing wrapper.
+// Requires:    ../Sass/Configuration/Variables/_colors.scss
+// Usage:       This file is compiled to the standalone CSS file:
+//              ../typo3_src/typo3/sysext/frontend_editing/Resources/Public/Css/inline_editing.css
+//
+
+// Include Color Variables
+@import '_colors.scss';
+@import '_inline_action_icon.scss';
+
+// minimize external css affecting ours (ckeditor can create momentary spans when hovering)
+
+*[contenteditable="true"] {
+    & > span:before,
+    & > span:after {
+        content: none !important;
+    }
+
+    &:hover:not(.hover-disabled) {
+        outline: 1px dotted transparentize($color-t3-primary, 0.7);
+    }
+
+    &:focus {
+        outline: 1px dotted $color-t3-primary;
+    }
+}
+
+// hide preview info box from TYPO3 admin panel
+
+#typo3-previewInfo,
+#typo3-preview-info {
+    display: none !important;
+}
+
+// visualize hidden elements
+
+.t3-frontend-editing__hidden-element {
+    opacity: 0.6;
+}
+
+// dropzone (areas where you can add content)
+
+.t3-frontend-editing__dropzone {
+    display: block;
+    height: 0;
+    background-color: $color-t3-primary;
+    transition: height 0.2s;
+    margin: 0;
+    padding: 0;
+}
+
+// Use case:
+// An admin could want to add a custom drop zone to allow the editors to drop a CE also inside empty page or container columns.
+// This will result in 2 adjacent drop zones when there are already CEs inside the column (one custom and one of the first CE).
+// This CSS rule will hide the second adjacent drop zone if they are both dropzones for tt_content CE.
+.t3-frontend-editing__dropzone[data-allowed-tables="tt_content"] + .t3-frontend-editing__dropzone[data-allowed-tables="tt_content"] { display: none !important; }
+
+.dropzones-enabled .t3-frontend-editing__dropzone {
+    height: 25px;
+    border: solid 1px white;
+
+    &.active {
+        border: dashed 1px $gray;
+        background-color: $color-t3-green;
+    }
+
+    &.t3-frontend-editing__dropzone-hidden {
+        display: none;
+        visibility: hidden;
+    }
+}
+
+// container for editing content element
+
+.t3-frontend-editing__ce {
+    position: relative !important;
+    min-height: 35px;
+
+    &:hover:not(.hover-disabled) {
+        outline: 1px dotted transparentize($color-t3-gray, 0.5);
+    }
+
+    &[draggable="true"]:hover {
+        cursor: pointer;
+    }
+}
+
+// inline actions (buttons like edit, hide, delete, new)
+
+.t3-frontend-editing__inline-actions {
+
+    // minimize external css affecting ours
+
+    &:before,
+    &:after,
+    span:before,
+    span:after,
+    img:before,
+    img:after {
+        content: none !important;
+    }
+
+    line-height: 1;
+    display: none;  // has also been set inline to hide before this styling is being applied
+    position: absolute !important;
+    bottom: 100%;
+    left: -1px;
+    color: $color-white;
+    background-color: transparentize($color-t3-gray-dark, 0.2);
+    z-index: 16777271;  // maximum z-index value to make sure it is always on top
+    text-align: right;
+
+    @include inline-action-icon;
+
+    .icon {
+        background-color: transparentize($color-white, 0.7);
+
+        // Cursor ponter for any icon except the flag icons
+        &:not([class*="icon-flags"]) { cursor: pointer; }
+
+        &:hover {
+            background-color: transparentize($gray-light, 0.3);
+        }
+
+        &.icon-actions-move {
+            background-color: $color-t3-primary;
+            cursor: grab;
+        }
+    }
+}
+
+// show inline actions when hovering
+
+.t3-frontend-editing__ce:hover .t3-frontend-editing__inline-actions:not(.hover-disabled) {
+    display: inline-block !important;   // overrides inline styling
+}

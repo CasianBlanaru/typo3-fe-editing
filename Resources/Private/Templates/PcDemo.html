@@ -1,0 +1,33 @@
+<html xmlns:f="http://typo3.org/ns/TYPO3/CMS/Fluid/ViewHelpers" data-namespace-typo3-fluid="true">
+
+<div class="pc-demo-content">
+    <f:if condition="{data.header}">
+        <h1 data-pc-field="header" data-pc-table="tt_content" data-pc-uid="{data.uid}">
+            {data.header}
+        </h1>
+    </f:if>
+    
+    <f:if condition="{data.subheader}">
+        <h2 data-pc-field="subheader" data-pc-table="tt_content" data-pc-uid="{data.uid}">
+            {data.subheader}
+        </h2>
+    </f:if>
+    
+    <f:if condition="{data.bodytext}">
+        <div data-pc-field="bodytext" data-pc-table="tt_content" data-pc-uid="{data.uid}">
+            <f:format.html>{data.bodytext}</f:format.html>
+        </div>
+    </f:if>
+    
+    <!-- Dropzone for adding new elements -->
+    <div class="pc-dropzone">
+        <button class="pc-add-element-btn" onclick="window.pixelCodaEditor?.addNewElement()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
+            </svg>
+            + Element hinzufügen
+        </button>
+    </div>
+</div>
+
+</html>

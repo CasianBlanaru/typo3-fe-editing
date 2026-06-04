@@ -1,0 +1,159 @@
+<html xmlns:f="http://typo3.org/ns/TYPO3/CMS/Fluid/ViewHelpers" data-namespace-typo3-fluid="true">
+<f:layout name="Default" />
+<f:section name="Main">
+
+    <f:render partial="Page/Structure/Header" arguments="{_all}" />
+
+    <main>
+        <f:render section="Main" />
+    </main>
+
+    <f:render partial="Page/Structure/Footer" arguments="{_all}" />
+
+    <!-- PixelCoda Frontend Editing Toolbar -->
+    <style>
+        .pc-fe-toolbar {
+            position: fixed;
+            right: 1rem;
+            bottom: 1rem;
+            padding: .5rem;
+            background: #111827;
+            color: #F9FAFB;
+            border-radius: .5rem;
+            z-index: 99999;
+            font: 14px/1.2 system-ui;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, .25);
+            display: flex;
+            gap: .5rem
+        }
+
+        .pc-fe-editable {
+            outline: 2px dashed rgba(14, 165, 233, .5);
+            outline-offset: 2px
+        }
+
+        .pc-fe-editable:focus {
+            outline-color: #0ea5e9
+        }
+
+        .btn {
+            width: 32px;
+            height: 32px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 6px;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            transition: all .2s
+        }
+
+        .btn:hover {
+            background: rgba(255, 255, 255, .1)
+        }
+
+        .btn.active {
+            background: #0EA5E9;
+            box-shadow: 0 0 0 2px rgba(14, 165, 233, .3)
+        }
+
+        .pc-drop {
+            padding: .75rem;
+            border: 2px dashed #E5E7EB;
+            border-radius: .5rem;
+            margin: .5rem 0;
+            display: flex;
+            gap: .5rem;
+            align-items: center;
+            justify-content: center
+        }
+
+        .pc-add {
+            all: unset;
+            background: #0EA5E9;
+            color: #fff;
+            padding: .25rem .5rem;
+            border-radius: .375rem;
+            cursor: pointer
+        }
+
+        .pc-add:hover {
+            background: #0284c7
+        }
+    </style>
+
+    <div id="pc-fe-toolbar-root" class="pc-fe-toolbar">
+        <button id="pc-edit-toggle" class="btn" title="Bearbeiten">✏️</button>
+        <button id="pc-ai" class="btn" title="KI">🤖</button>
+        <button id="pc-add-global" class="btn" title="Element hinzufügen">➕</button>
+    </div>
+
+    <script>
+        window.TYPO3 = window.TYPO3 || {
+            settings: {},
+            security: {}
+        };
+        window.TYPO3.settings.ajaxUrls = window.TYPO3.settings.ajaxUrls || {};
+        window.TYPO3.settings.ajaxUrls['fe_editor_save'] = '/typo3/ajax/fe-editor/save';
+        window.TYPO3.security.csrfToken = 'demo-token';
+        window.demoMode = true;
+
+        (function() {
+            function init() {
+                const bar = document.getElementById('pc-fe-toolbar-root');
+                if (!bar) return;
+
+                let editMode = false;
+
+                function setEditable(on) {
+                    document.querySelectorAll('[data-pc-field]').forEach(el => {
+                        el.contentEditable = on ? 'true' : 'false';
+                        el.classList.toggle('pc-fe-editable', on);
+                    });
+                }
+
+                document.addEventListener('click', async (e) => {
+                    if (e.target.closest('#pc-edit-toggle')) {
+                        editMode = !editMode;
+                        setEditable(editMode);
+                        e.target.closest('#pc-edit-toggle').classList.toggle('active', editMode);
+                        alert(editMode ? 'Edit-Modus aktiviert!' : 'Edit-Modus deaktiviert!');
+                    }
+                    if (e.target.closest('#pc-ai')) {
+                        const el = document.querySelector('[data-pc-field][contenteditable="true"]');
+                        if (el) {
+                            el.innerHTML = '[KI Vorschlag] ' + (el.innerText || el.textContent || '');
+                        } else {
+                            alert('Aktivieren Sie zuerst den Edit-Modus!');
+                        }
+                    }
+                    if (e.target.closest('#pc-add-global')) {
+                        alert('Demo: Neues Element würde erstellt werden!');
+                    }
+                });
+
+                // Save on blur
+                document.addEventListener('focusout', async (e) => {
+                    const el = e.target.closest && e.target.closest('[data-pc-field]');
+                    if (!el || !editMode) return;
+                    const {
+                        table,
+                        uid,
+                        field
+                    } = el.dataset;
+                    alert('Demo: Feld "' + field + '" würde gespeichert werden!');
+                });
+            }
+
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', init);
+            } else {
+                init();
+            }
+        })();
+    </script>
+
+</f:section>
+
+</html>

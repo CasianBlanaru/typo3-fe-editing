@@ -1,0 +1,58 @@
+:root{
+    --scroll-area-background: #{transparentize(black, 0.2)};
+}
+.scrollarea {
+    contain: strict;
+    position: absolute;
+    left: 0;
+    right: 0;
+    background: var(--scroll-area-background);
+    min-height: $scroll-area-min-height;
+    max-height: $scroll-area-max-height;
+    height: $scroll-area-height;
+}
+
+.scrollarea-top {
+    top: 0;
+}
+
+.scrollarea-bottom {
+    bottom: 0;
+}
+
+.scrollarea--arrow:before {
+    content: "";
+    display: block;
+    width: $scroll-area-arrow-size;
+    height: $scroll-area-arrow-size;
+    top: 50%;
+    margin: auto;
+    margin-top: -($scroll-area-arrow-size / 2);
+    position: relative;
+    border: $scroll-area-arrow-width solid $scroll-area-arrow-color;
+    transform: rotate(45deg);
+    transition:
+        border-color $scroll-area-arrow-transition-time $scroll-area-arrow-transition-function,
+        transform $scroll-area-arrow-transition-time $scroll-area-arrow-transition-function;
+}
+
+.scrollarea--arrow-up:before {
+    border-bottom-width: 0;
+    border-right-width: 0;
+}
+
+.scrollarea--arrow-down:before {
+    border-top-width: 0;
+    border-left-width: 0;
+}
+
+.scrollarea--arrow__mouseover:before,
+.scrollarea--arrow:hover:before {
+    transform: translateY(-5px) rotate(45deg);
+    border-color: $scroll-area-arrow-color--hover;
+}
+
+.scrollarea--arrow-down:hover:before,
+.scrollarea--arrow-down.scrollarea--arrow__mouseover:before {
+    transform: translateY(5px) rotate(45deg);
+}

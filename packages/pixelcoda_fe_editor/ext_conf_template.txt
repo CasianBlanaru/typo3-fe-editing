@@ -1,0 +1,12 @@
+# cat=AI/enable; type=boolean; label=Enable AI writing assistant
+ai.enabled = 1
+
+# cat=AI/provider; type=options[OpenAI=openai,Anthropic Claude=anthropic,OpenRouter=openrouter,Mistral=mistral]; label=AI provider
+ai.provider = openai
+
+# cat=AI/provider; type=string; label=API key: Environment variables are recommended for production and take precedence.
+ai.apiKey =
+
+# cat=AI/provider; type=string; label=Model: Leave empty to use the provider default.
+ai.model =
+
