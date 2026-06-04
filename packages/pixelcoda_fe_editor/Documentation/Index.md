@@ -1,17 +1,27 @@
 # Pixelcoda FE Editor Documentation
 
-This documentation belongs to the TYPO3 extension `pixelcoda_fe_editor`.
+Documentation for accessible frontend editing, inline content editing, drag-and-drop sorting, contextual record editing and optional AI assistance in TYPO3 12, 13 and 14.
+
+![Pixelcoda TYPO3 frontend editing overview](Images/editor-overview.png)
 
 Start here:
 
 - [README](../README.md)
-- [Frontend editing toolbar](Images/frontend-editing-toolbar.png)
-- [Image edit button](Images/image-edit-button.png)
-- [Contextual record canvas](Images/contextual-record-canvas.png)
-- [AI writing canvas](Images/ai-writing-canvas.png)
-- [Premium element actions](Images/premium-element-actions.png)
-- [Drag-and-drop insertion indicator](Images/drag-drop-indicator.png)
-- [Save route debug](Images/save-route-debug.png)
+- [Frontend editing overview](Images/editor-overview.png)
+- [Premium element actions](Images/element-actions.png)
+- [Content drag-and-drop](Images/content-drag-drop.png)
+- [Contextual TYPO3 record editor](Images/contextual-editor.png)
+- [AI writing assistant](Images/ai-assistant.png)
+
+## Visual Workflows
+
+| Inline editing and element actions | Drag-and-drop sorting |
+| --- | --- |
+| ![Inline editing and element actions](Images/element-actions.png) | ![Drag-and-drop sorting](Images/content-drag-drop.png) |
+
+| Contextual TYPO3 editor | AI writing assistant |
+| --- | --- |
+| ![Contextual TYPO3 editor](Images/contextual-editor.png) | ![AI writing assistant](Images/ai-assistant.png) |
 
 ## Existing Frontends
 

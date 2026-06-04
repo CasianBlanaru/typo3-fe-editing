@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.1.1 - 2026-06-04
+
+- Improved GitHub, Composer and TYPO3 extension descriptions for discoverability.
+- Added focused keywords for TYPO3 frontend editing, inline editing, headless CMS and accessibility.
+- Replaced legacy and debug screenshots with consistent real-product workflow screenshots.
+- Rebuilt the repository README as a concise stable-product overview.
+
 ## 1.1.0 - 2026-06-04
 
 - Improved content-element drag-and-drop with a stable insertion indicator.

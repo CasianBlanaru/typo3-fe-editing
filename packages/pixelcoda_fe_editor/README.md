@@ -1,10 +1,10 @@
-# Pixelcoda FE Editor
+# Pixelcoda FE Editor: Frontend Editing for TYPO3
 
-Frontend Editing for TYPO3 12, 13 and 14 with inline text editing, content creation, sorting controls, image editing shortcuts and an optional OpenAI-powered writing assistant.
+Accessible frontend editing for TYPO3 12 LTS, TYPO3 13 LTS and TYPO3 14. Edit content directly on the rendered website with inline text editing, drag-and-drop sorting, contextual FormEngine records, image editing, headless-ready markers and an optional AI writing assistant.
 
-> Status: stable. Version 1.1.0 supports TYPO3 12 LTS, TYPO3 13 LTS and TYPO3 14.
+> Status: stable. Version 1.1.1 supports TYPO3 12 LTS, TYPO3 13 LTS and TYPO3 14.
 
-![Frontend editing toolbar](Documentation/Images/frontend-editing-toolbar.png)
+![Pixelcoda TYPO3 frontend editing overview](Documentation/Images/editor-overview.png)
 
 ## Features
 
@@ -21,7 +21,7 @@ Frontend Editing for TYPO3 12, 13 and 14 with inline text editing, content creat
 - Optional AI integration with OpenAI, Anthropic Claude, OpenRouter or Mistral through a server-side TYPO3 Ajax endpoint.
 - TYPO3 page cache clearing after save, create and reorder operations.
 
-![Image edit button](Documentation/Images/image-edit-button.png)
+![Premium TYPO3 frontend element actions](Documentation/Images/element-actions.png)
 
 ## Requirements
 
@@ -183,21 +183,13 @@ POST https://api.openai.com/v1/responses
 
 ## Screenshots
 
-| Editing toolbar | Image edit |
+| Premium element actions | Drag-and-drop sorting |
 | --- | --- |
-| ![Toolbar](Documentation/Images/frontend-editing-toolbar.png) | ![Image edit](Documentation/Images/image-edit-button.png) |
+| ![Premium element actions](Documentation/Images/element-actions.png) | ![Content drag-and-drop](Documentation/Images/content-drag-drop.png) |
 
-| Route/debug state |
-| --- |
-| ![Save route debug](Documentation/Images/save-route-debug.png) |
-
-| Contextual record canvas | AI writing canvas |
+| Contextual TYPO3 record editor | AI writing assistant |
 | --- | --- |
-| ![Contextual record canvas](Documentation/Images/contextual-record-canvas.png) | ![AI writing canvas](Documentation/Images/ai-writing-canvas.png) |
-
-| Premium element actions | Drag-and-drop insertion indicator |
-| --- | --- |
-| ![Premium element actions](Documentation/Images/premium-element-actions.png) | ![Drag-and-drop insertion indicator](Documentation/Images/drag-drop-indicator.png) |
+| ![Contextual TYPO3 record editor](Documentation/Images/contextual-editor.png) | ![AI writing assistant](Documentation/Images/ai-assistant.png) |
 
 ## XIMA Frontend Edit Inspiration
 

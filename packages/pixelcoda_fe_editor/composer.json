@@ -1,6 +1,16 @@
 {
   "name": "pixelcoda/fe-editor",
-  "description": "Core-near frontend editing for TYPO3 12/13/14 with AI hooks, dropzones, and a clean UI.",
+  "description": "Accessible frontend editing for TYPO3 12/13/14 with inline editing, drag-and-drop, contextual records, headless support and optional AI.",
+  "keywords": [
+    "typo3",
+    "typo3-extension",
+    "frontend-editing",
+    "inline-editing",
+    "headless-cms",
+    "accessibility",
+    "drag-and-drop",
+    "ai"
+  ],
   "type": "typo3-cms-extension",
   "license": "MIT",
   "require": {
@@ -11,6 +21,10 @@
     "psr-4": {
       "PixelCoda\\FeEditor\\": "Classes/"
     }
+  },
+  "support": {
+    "issues": "https://github.com/CasianBlanaru/typo3-fe-editing/issues",
+    "source": "https://github.com/CasianBlanaru/typo3-fe-editing"
   },
   "extra": {
     "typo3/cms": {
