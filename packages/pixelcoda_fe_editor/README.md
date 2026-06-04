@@ -2,7 +2,7 @@
 
 Frontend Editing for TYPO3 12, 13 and 14 with inline text editing, content creation, sorting controls, image editing shortcuts and an optional OpenAI-powered writing assistant.
 
-> Status: stable. Version 1.0.0 supports TYPO3 12 LTS, TYPO3 13 LTS and TYPO3 14.
+> Status: stable. Version 1.1.0 supports TYPO3 12 LTS, TYPO3 13 LTS and TYPO3 14.
 
 ![Frontend editing toolbar](Documentation/Images/frontend-editing-toolbar.png)
 
@@ -14,6 +14,8 @@ Frontend Editing for TYPO3 12, 13 and 14 with inline text editing, content creat
 - CSRF protection through TYPO3 backend `FormProtection`.
 - Content creation through the `+` button.
 - Content sorting with drag-and-drop plus explicit `Up` / `Down` controls for large content elements.
+- Stable insertion indicator and column-scoped persistence while dragging content elements.
+- Per-element action menu for contextual editing, hiding and confirmed deletion.
 - Image edit shortcut that opens the TYPO3 contextual record editor in an accessible side canvas.
 - Automatic frontend refresh after saving the contextual TYPO3 record editor.
 - Optional AI integration with OpenAI, Anthropic Claude, OpenRouter or Mistral through a server-side TYPO3 Ajax endpoint.
@@ -118,11 +120,13 @@ If your project renders all content types, adapt `createContentElement()` in `Re
 
 In edit mode every content element gets a small control group:
 
-- `::` drag handle
-- `Up` move one element up
-- `Down` move one element down
+- drag handle for mouse and pointer interaction
+- arrow-up button to move one element up
+- arrow-down button to move one element down
 
-The explicit buttons are important for large content elements where drag-and-drop can be hard to control. Reordering updates `tt_content.sorting` through the save endpoint.
+Dragging shows a stable insertion line and only changes the DOM when the element is dropped. The explicit arrow buttons remain the accessible keyboard alternative. Reordering updates `tt_content.sorting` through the save endpoint and is scoped to the affected content column.
+
+Each element also provides a compact action menu for opening the contextual editor, hiding the element, or deleting it after an accessible confirmation dialog. All writes use TYPO3 DataHandler and existing backend-user permissions.
 
 ## Editing Images And Records
 
@@ -190,6 +194,16 @@ POST https://api.openai.com/v1/responses
 | Contextual record canvas | AI writing canvas |
 | --- | --- |
 | ![Contextual record canvas](Documentation/Images/contextual-record-canvas.png) | ![AI writing canvas](Documentation/Images/ai-writing-canvas.png) |
+
+| Premium element actions | Drag-and-drop insertion indicator |
+| --- | --- |
+| ![Premium element actions](Documentation/Images/premium-element-actions.png) | ![Drag-and-drop insertion indicator](Documentation/Images/drag-drop-indicator.png) |
+
+## XIMA Frontend Edit Inspiration
+
+The established workflows of [xima-media/xima-typo3-frontend-edit](https://github.com/xima-media/xima-typo3-frontend-edit) informed the UX review for element actions, contextual editing and administrative controls.
+
+Pixelcoda FE Editor remains an independent MIT implementation. No GPL source code was copied. Pixelcoda keeps its own inline editing, AI provider integration, automatic wrapper detection, headless marker API and visual design.
 
 ## Contact
 

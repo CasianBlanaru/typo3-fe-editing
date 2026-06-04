@@ -36,7 +36,7 @@ final class SaveController
             }
 
             $allowedTables = [
-                'tt_content' => ['header', 'bodytext', 'subheader', 'frame_class', 'CType', 'colPos', 'pid', 'sorting'],
+                'tt_content' => ['header', 'bodytext', 'subheader', 'frame_class', 'CType', 'colPos', 'pid', 'sorting', 'hidden'],
             ];
 
             $table = $this->stringValue($parsed['table'] ?? '');

@@ -88,3 +88,6 @@ Verified in a real browser:
 - The native TYPO3 contextual record editor opens in the frontend side canvas.
 - Save closes the canvas and reloads the frontend.
 - Keyboard focus is trapped while the dialog is open and restored after closing.
+- The premium element-action menu exposes record metadata and contextual editing.
+- The delete confirmation uses alert-dialog semantics and restores focus after cancellation.
+- Drag-and-drop shows a stable insertion indicator and persists the affected column order.

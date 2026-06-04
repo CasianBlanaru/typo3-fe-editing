@@ -18,7 +18,7 @@
 .pc-fe-icon-button{padding:0;width:42px}
 .pc-fe-icon{width:18px!important;height:18px!important;max-width:18px!important;max-height:18px!important;display:block;flex:0 0 auto;border-radius:0!important;box-shadow:none!important}
 .pc-fe-button:hover{background:#0b76b7;border-color:#0b76b7;box-shadow:0 0 0 3px rgba(14,165,233,.2)}
-.pc-fe-button:focus-visible,.pc-fe-image-edit-button:focus-visible,.pc-fe-drag-handle:focus-visible,.pc-fe-move-button:focus-visible{outline:3px solid #f59e0b;outline-offset:2px}
+.pc-fe-button:focus-visible,.pc-fe-image-edit-button:focus-visible,.pc-fe-drag-handle:focus-visible,.pc-fe-move-button:focus-visible,.pc-fe-actions-toggle:focus-visible,.pc-fe-actions-menu button:focus-visible,.pc-fe-confirm button:focus-visible{outline:3px solid #f59e0b;outline-offset:2px}
 .pc-fe-button.active{background:#047857;border-color:#047857;box-shadow:0 0 0 3px rgba(4,120,87,.24)}
 .pc-fe-save{background:#0b76b7;border-color:#0b76b7}
 .pc-fe-save.dirty{background:#b45309;border-color:#b45309;color:#fff}
@@ -34,13 +34,33 @@
 .pc-fe-image-edit-button .pc-fe-icon{width:16px!important;height:16px!important;max-width:16px!important;max-height:16px!important}
 .pc-fe-image-edit-button:hover{background:#0b76b7;border-color:#0b76b7;color:#fff;box-shadow:0 0 0 3px rgba(14,165,233,.2),0 10px 26px rgba(17,24,39,.22)}
 .pc-fe-image-edit-button[hidden]{display:none}
-.pc-fe-draggable{position:relative;cursor:grab}
-.pc-fe-dragging{opacity:.72;cursor:grabbing}
+.pc-fe-draggable{position:relative}
+.pc-fe-dragging{opacity:.48;cursor:grabbing}
+.pc-fe-is-dragging,.pc-fe-is-dragging *{cursor:grabbing!important}
+.pc-fe-drop-indicator{height:6px;margin:.6rem 0;border-radius:6px;background:#0b76b7;box-shadow:0 0 0 4px rgba(14,165,233,.18),0 8px 22px rgba(11,118,183,.24);pointer-events:none}
+.pc-fe-drop-indicator::before{content:"";display:block;width:14px;height:14px;border:3px solid #fff;border-radius:50%;background:#0b76b7;box-shadow:0 0 0 2px #0b76b7;transform:translate(-1px,-4px)}
 .pc-fe-move-controls{position:absolute;left:.75rem;top:.75rem;display:inline-flex;gap:.25rem;padding:.25rem;border:1px solid rgba(17,24,39,.12);border-radius:8px;background:#fff;box-shadow:0 8px 22px rgba(17,24,39,.18);z-index:100000}
 .pc-fe-move-controls[hidden]{display:none}
-.pc-fe-drag-handle,.pc-fe-move-button{width:34px;height:30px;padding:0;display:inline-flex;align-items:center;justify-content:center;border:1px solid rgba(17,24,39,.16);border-radius:6px;background:#fff;color:#111827;font:800 11px/1 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;cursor:pointer}
+.pc-fe-drag-handle,.pc-fe-move-button,.pc-fe-actions-toggle{width:34px;height:30px;padding:0;display:inline-flex;align-items:center;justify-content:center;border:1px solid rgba(17,24,39,.16);border-radius:6px;background:#fff;color:#111827;font:800 17px/1 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;cursor:pointer}
 .pc-fe-drag-handle{cursor:grab}
-.pc-fe-drag-handle:hover,.pc-fe-move-button:hover{border-color:#0b76b7;color:#0b76b7;box-shadow:0 0 0 3px rgba(14,165,233,.18)}
+.pc-fe-drag-handle:hover,.pc-fe-move-button:hover,.pc-fe-actions-toggle:hover{border-color:#0b76b7;color:#0b76b7;box-shadow:0 0 0 3px rgba(14,165,233,.18)}
+.pc-fe-actions-menu{position:absolute;top:calc(100% + .4rem);left:0;min-width:210px;padding:.35rem;display:grid;gap:.2rem;border:1px solid #d1d5db;border-radius:8px;background:#fff;box-shadow:0 16px 38px rgba(17,24,39,.24);z-index:100001}
+.pc-fe-actions-menu[hidden]{display:none}
+.pc-fe-actions-meta{padding:.45rem .7rem .6rem;display:grid;gap:.15rem;border-bottom:1px solid #e5e7eb;margin-bottom:.15rem}
+.pc-fe-actions-meta strong,.pc-fe-actions-meta span{max-width:190px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pc-fe-actions-meta strong{font:750 13px/1.25 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#111827}
+.pc-fe-actions-meta span{font:650 11px/1.25 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#6b7280}
+.pc-fe-actions-menu button{min-height:38px;padding:.55rem .7rem;border:0;border-radius:5px;background:transparent;color:#111827;text-align:left;font:700 13px/1.25 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;cursor:pointer}
+.pc-fe-actions-menu button:hover,.pc-fe-actions-menu button:focus{background:#eff6ff;color:#075985}
+.pc-fe-actions-menu .pc-fe-danger-action{color:#b91c1c}
+.pc-fe-actions-menu .pc-fe-danger-action:hover,.pc-fe-actions-menu .pc-fe-danger-action:focus{background:#fef2f2;color:#991b1b}
+.pc-fe-confirm-backdrop{position:fixed;inset:0;z-index:100010;padding:1rem;display:grid;place-items:center;background:rgba(15,23,42,.62)}
+.pc-fe-confirm{width:min(440px,100%);padding:1.25rem;border:1px solid #d1d5db;border-radius:8px;background:#fff;color:#111827;box-shadow:0 24px 70px rgba(15,23,42,.38);font:500 14px/1.5 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+.pc-fe-confirm h2{margin:0 0 .5rem;font:750 20px/1.25 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;letter-spacing:0}
+.pc-fe-confirm p{margin:0;color:#4b5563}
+.pc-fe-confirm-actions{margin-top:1.25rem;display:flex;justify-content:flex-end;gap:.5rem}
+.pc-fe-confirm button{min-height:42px;padding:0 .9rem;border:1px solid #d1d5db;border-radius:6px;background:#fff;color:#111827;font:750 14px/1.2 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;cursor:pointer}
+.pc-fe-confirm .pc-fe-confirm-danger{border-color:#b91c1c;background:#b91c1c;color:#fff}
 .pc-fe-drawer-open{overflow:hidden}
 .pc-fe-drawer-backdrop{position:fixed;inset:0;z-index:100001;background:rgba(15,23,42,.44);opacity:0;transition:opacity .18s ease}
 .pc-fe-drawer-backdrop.is-open{opacity:1}
@@ -73,5 +93,5 @@
 .pc-fe-drawer-primary:disabled{border-color:#d1d5db;background:#e5e7eb;color:#6b7280;cursor:not-allowed}
 @keyframes pc-fe-pulse{50%{opacity:.35}}
 @media (max-width:520px){.pc-fe-toolbar{right:.5rem;bottom:.5rem;width:calc(100vw - 1rem)}.pc-fe-toolbar-actions{display:grid;grid-template-columns:repeat(4,1fr)}.pc-fe-toolbar-divider{display:none}.pc-fe-button{width:100%;padding:0 .45rem}.pc-fe-toolbar-feedback{align-items:flex-start;flex-direction:column;gap:.2rem}.pc-fe-status{margin-left:0;text-align:left}.pc-fe-drawer{width:100vw}.pc-fe-ai-actions{grid-template-columns:1fr}.pc-fe-ai-field{align-items:flex-start;flex-direction:column;gap:.25rem}}
-@media (prefers-color-scheme:dark){.pc-fe-drawer{background:#111827;color:#f9fafb;border-left-color:#374151}.pc-fe-drawer-header{background:#111827;border-bottom-color:#374151}.pc-fe-drawer-title{color:#f9fafb}.pc-fe-drawer-close,.pc-fe-ai-action,.pc-fe-ai-field{background:#172033;color:#f9fafb;border-color:#4b5563}.pc-fe-drawer-hint{background:#172033;color:#d1d5db;border-bottom-color:#374151}.pc-fe-ai-panel{background:#0f172a}.pc-fe-ai-panel .pc-fe-drawer-hint{background:transparent}.pc-fe-ai-actions legend{color:#e5e7eb}.pc-fe-ai-field span{color:#9ca3af}.pc-fe-ai-action:hover,.pc-fe-ai-action.active{background:#0c4a6e;color:#e0f2fe;border-color:#38bdf8}.pc-fe-ai-config{background:#064e3b;color:#d1fae5;border-color:#047857}.pc-fe-ai-config[data-state="warning"]{background:#431407;color:#ffedd5;border-color:#c2410c}}
+@media (prefers-color-scheme:dark){.pc-fe-drawer{background:#111827;color:#f9fafb;border-left-color:#374151}.pc-fe-drawer-header{background:#111827;border-bottom-color:#374151}.pc-fe-drawer-title{color:#f9fafb}.pc-fe-drawer-close,.pc-fe-ai-action,.pc-fe-ai-field{background:#172033;color:#f9fafb;border-color:#4b5563}.pc-fe-drawer-hint{background:#172033;color:#d1d5db;border-bottom-color:#374151}.pc-fe-ai-panel{background:#0f172a}.pc-fe-ai-panel .pc-fe-drawer-hint{background:transparent}.pc-fe-ai-actions legend{color:#e5e7eb}.pc-fe-ai-field span{color:#9ca3af}.pc-fe-ai-action:hover,.pc-fe-ai-action.active{background:#0c4a6e;color:#e0f2fe;border-color:#38bdf8}.pc-fe-ai-config{background:#064e3b;color:#d1fae5;border-color:#047857}.pc-fe-ai-config[data-state="warning"]{background:#431407;color:#ffedd5;border-color:#c2410c}.pc-fe-move-controls,.pc-fe-drag-handle,.pc-fe-move-button,.pc-fe-actions-toggle,.pc-fe-actions-menu,.pc-fe-confirm,.pc-fe-confirm button{background:#172033;color:#f9fafb;border-color:#4b5563}.pc-fe-actions-menu button,.pc-fe-actions-meta strong{color:#f9fafb}.pc-fe-actions-meta{border-bottom-color:#374151}.pc-fe-actions-meta span{color:#9ca3af}.pc-fe-actions-menu button:hover,.pc-fe-actions-menu button:focus{background:#0c4a6e;color:#e0f2fe}.pc-fe-confirm p{color:#d1d5db}}
 @media (prefers-reduced-motion:reduce){.pc-fe-button,.pc-fe-ai.is-loading .pc-fe-icon,.pc-fe-drawer,.pc-fe-drawer-backdrop{transition:none;animation:none}}

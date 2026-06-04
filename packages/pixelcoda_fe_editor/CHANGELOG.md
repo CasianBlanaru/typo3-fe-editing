@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.1.0 - 2026-06-04
+
+- Improved content-element drag-and-drop with a stable insertion indicator.
+- Scoped order persistence to the affected TYPO3 content column.
+- Replaced text movement controls with compact accessible arrow controls.
+- Added a per-element premium action menu for contextual editing, hiding and confirmed deletion.
+- Added content-element metadata to the action menu and dedicated contextual-editor titles.
+- Added documentation screenshots and transparent XIMA workflow attribution.
+
 ## 1.0.0 - 2026-06-04
 
 - Stable TYPO3 12, 13 and 14 frontend editing release.

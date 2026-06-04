@@ -25,8 +25,13 @@
         let saveTimer = null;
         let activeEditable = null;
         let draggedFrame = null;
+        let dragSourceNextSibling = null;
+        let dragTargetContainer = null;
         let drawerTrigger = null;
         let aiAction = 'rewrite';
+        const dropIndicator = document.createElement('div');
+        dropIndicator.className = 'pc-fe-drop-indicator';
+        dropIndicator.setAttribute('role', 'presentation');
 
         updateToolbarState();
 
@@ -55,11 +60,11 @@
                 image.classList.toggle('pc-fe-image', on);
             });
             document.querySelectorAll('[data-pc-record-uid]').forEach(frame => {
-                frame.draggable = on;
                 frame.classList.toggle('pc-fe-draggable', on);
             });
             document.querySelectorAll('.pc-fe-drag-handle').forEach(handle => {
                 handle.hidden = !on;
+                handle.draggable = on;
             });
             document.querySelectorAll('.pc-fe-move-controls').forEach(controls => {
                 controls.hidden = !on;
@@ -149,7 +154,6 @@
         function markFrame(frame, uid) {
             if (frame.closest('.pc-fe-toolbar')) return;
             frame.dataset.pcRecordUid = String(uid);
-            frame.draggable = editMode;
             frame.classList.toggle('pc-fe-draggable', editMode);
             if (frame.querySelector(':scope > .pc-fe-move-controls')) return;
 
@@ -157,17 +161,127 @@
             controls.className = 'pc-fe-move-controls';
             controls.hidden = !editMode;
             controls.innerHTML = [
-                '<button type="button" class="pc-fe-drag-handle" title="Element ziehen" aria-label="Element ziehen"><span aria-hidden="true">::</span></button>',
-                '<button type="button" class="pc-fe-move-button" data-pc-move="up" title="Nach oben" aria-label="Nach oben">Up</button>',
-                '<button type="button" class="pc-fe-move-button" data-pc-move="down" title="Nach unten" aria-label="Nach unten">Down</button>'
+                '<button type="button" class="pc-fe-drag-handle" title="Element ziehen" aria-label="Element per Drag-and-drop verschieben"><span aria-hidden="true">⠿</span></button>',
+                '<button type="button" class="pc-fe-move-button" data-pc-move="up" title="Nach oben verschieben" aria-label="Nach oben verschieben"><span aria-hidden="true">↑</span></button>',
+                '<button type="button" class="pc-fe-move-button" data-pc-move="down" title="Nach unten verschieben" aria-label="Nach unten verschieben"><span aria-hidden="true">↓</span></button>',
+                '<button type="button" class="pc-fe-actions-toggle" title="Elementaktionen" aria-label="Elementaktionen öffnen" aria-haspopup="menu" aria-expanded="false"><span aria-hidden="true">•••</span></button>',
+                '<div class="pc-fe-actions-menu" role="menu" hidden>',
+                '<div class="pc-fe-actions-meta"><strong></strong><span></span></div>',
+                '<button type="button" role="menuitem" data-pc-record-action="edit">Datensatz bearbeiten</button>',
+                '<button type="button" role="menuitem" data-pc-record-action="hide">Element ausblenden</button>',
+                '<button type="button" role="menuitem" class="pc-fe-danger-action" data-pc-record-action="delete">Element löschen</button>',
+                '</div>'
             ].join('');
             frame.prepend(controls);
+            controls.querySelector('.pc-fe-drag-handle').draggable = editMode;
+            const record = getRecordByUid(uid);
+            controls.querySelector('.pc-fe-actions-meta strong').textContent = record?.header || record?.CType || 'Inhaltselement';
+            controls.querySelector('.pc-fe-actions-meta span').textContent = (record?.CType || 'tt_content') + ' · UID ' + uid;
         }
 
         function getIcon(name) {
             return TYPO3 && TYPO3.settings && TYPO3.settings.feEditorIcons
                 ? (TYPO3.settings.feEditorIcons[name] || '')
                 : '';
+        }
+
+        function getRecordByUid(uid) {
+            return getEditableRecords().find(record => String(record.uid) === String(uid)) || null;
+        }
+
+        function closeActionMenus(except = null) {
+            document.querySelectorAll('.pc-fe-actions-menu').forEach(menu => {
+                if (menu !== except) menu.hidden = true;
+            });
+            document.querySelectorAll('.pc-fe-actions-toggle').forEach(button => {
+                if (!except || button.nextElementSibling !== except) {
+                    button.setAttribute('aria-expanded', 'false');
+                }
+            });
+        }
+
+        function confirmRecordAction(title, message, confirmLabel) {
+            return new Promise(resolve => {
+                const previousFocus = document.activeElement;
+                const overlay = document.createElement('div');
+                overlay.className = 'pc-fe-confirm-backdrop';
+                overlay.innerHTML = [
+                    '<div class="pc-fe-confirm" role="alertdialog" aria-modal="true" aria-labelledby="pc-fe-confirm-title" aria-describedby="pc-fe-confirm-message">',
+                    '<h2 id="pc-fe-confirm-title"></h2>',
+                    '<p id="pc-fe-confirm-message"></p>',
+                    '<div class="pc-fe-confirm-actions">',
+                    '<button type="button" data-pc-confirm="cancel">Abbrechen</button>',
+                    '<button type="button" class="pc-fe-confirm-danger" data-pc-confirm="accept"></button>',
+                    '</div>',
+                    '</div>'
+                ].join('');
+                overlay.querySelector('#pc-fe-confirm-title').textContent = title;
+                overlay.querySelector('#pc-fe-confirm-message').textContent = message;
+                overlay.querySelector('[data-pc-confirm="accept"]').textContent = confirmLabel;
+                document.body.appendChild(overlay);
+
+                const close = result => {
+                    document.removeEventListener('keydown', onKeydown);
+                    overlay.remove();
+                    previousFocus?.focus?.();
+                    resolve(result);
+                };
+                const onKeydown = event => {
+                    if (event.key === 'Escape') close(false);
+                    if (event.key === 'Tab') {
+                        const buttons = Array.from(overlay.querySelectorAll('button'));
+                        const first = buttons[0];
+                        const last = buttons[buttons.length - 1];
+                        if (event.shiftKey && document.activeElement === first) {
+                            event.preventDefault();
+                            last.focus();
+                        } else if (!event.shiftKey && document.activeElement === last) {
+                            event.preventDefault();
+                            first.focus();
+                        }
+                    }
+                };
+                overlay.addEventListener('click', event => {
+                    if (event.target === overlay || event.target.closest('[data-pc-confirm="cancel"]')) close(false);
+                    if (event.target.closest('[data-pc-confirm="accept"]')) close(true);
+                });
+                document.addEventListener('keydown', onKeydown);
+                overlay.querySelector('[data-pc-confirm="cancel"]').focus();
+            });
+        }
+
+        async function runRecordAction(frame, action, trigger) {
+            const uid = frame?.dataset.pcRecordUid;
+            const record = getRecordByUid(uid);
+            if (!uid) return;
+
+            if (action === 'edit' && record?.editUrl) {
+                openDrawer('record', trigger, record.editUrl);
+                return;
+            }
+            if (action === 'hide') {
+                const confirmed = await confirmRecordAction(
+                    'Element ausblenden?',
+                    'Das Element wird im Frontend ausgeblendet und kann im TYPO3-Backend wieder aktiviert werden.',
+                    'Ausblenden'
+                );
+                if (confirmed && await saveDataPayload({ tt_content: { [uid]: { hidden: 1 } } })) {
+                    setStatus('Element ausgeblendet, Seite wird aktualisiert...', 'success', true);
+                    window.location.reload();
+                }
+                return;
+            }
+            if (action === 'delete') {
+                const confirmed = await confirmRecordAction(
+                    'Element löschen?',
+                    'Das Inhaltselement wird über TYPO3 DataHandler gelöscht.',
+                    'Endgültig löschen'
+                );
+                if (confirmed && await saveDataPayload({}, { tt_content: { [uid]: { delete: 1 } } })) {
+                    setStatus('Element gelöscht, Seite wird aktualisiert...', 'success', true);
+                    window.location.reload();
+                }
+            }
         }
 
         function createIconMarkup(name) {
@@ -348,10 +462,12 @@
         function openDrawer(type, trigger, url) {
             if (!drawer || !drawerBackdrop || !drawerTitle) return;
             drawerTrigger = trigger || document.activeElement;
-            imagePanel.hidden = type !== 'image';
+            imagePanel.hidden = type !== 'image' && type !== 'record';
             aiPanel.hidden = type !== 'ai';
-            drawerTitle.textContent = type === 'image' ? 'Bild und Datensatz bearbeiten' : 'AI-Schreibassistent';
-            if (type === 'image' && recordFrame) {
+            drawerTitle.textContent = type === 'image'
+                ? 'Bild und Datensatz bearbeiten'
+                : (type === 'record' ? 'Inhaltselement bearbeiten' : 'AI-Schreibassistent');
+            if ((type === 'image' || type === 'record') && recordFrame) {
                 recordFrame.src = url;
             }
             if (type === 'ai') {
@@ -452,6 +568,9 @@
         }
 
         document.addEventListener('click', async (e) => {
+            if (!e.target.closest('.pc-fe-actions-toggle') && !e.target.closest('.pc-fe-actions-menu')) {
+                closeActionMenus();
+            }
             if (e.target.closest('#pc-edit-toggle')) {
                 if (editToggle && editToggle.disabled) return;
                 if (editMode && dirtyFields.size > 0) {
@@ -470,11 +589,26 @@
                 const button = e.target.closest('.pc-fe-move-button');
                 const frame = button ? button.closest('[data-pc-record-uid]') : null;
                 const direction = button ? button.dataset.pcMove : '';
-                if (frame && moveFrame(frame, direction) && await saveCurrentOrder()) {
+                if (frame && moveFrame(frame, direction) && await saveCurrentOrder(frame.parentElement)) {
                     setStatus('Reihenfolge gespeichert', 'success');
                 } else {
                     setStatus('Kann nicht verschieben', 'warning');
                 }
+            }
+            if (e.target.closest('.pc-fe-actions-toggle')) {
+                const button = e.target.closest('.pc-fe-actions-toggle');
+                const menu = button.nextElementSibling;
+                const open = menu?.hidden === true;
+                closeActionMenus(open ? menu : null);
+                if (menu) menu.hidden = !open;
+                button.setAttribute('aria-expanded', open ? 'true' : 'false');
+                if (open) menu.querySelector('[role="menuitem"]')?.focus();
+            }
+            if (e.target.closest('[data-pc-record-action]')) {
+                const button = e.target.closest('[data-pc-record-action]');
+                const frame = button.closest('[data-pc-record-uid]');
+                closeActionMenus();
+                await runRecordAction(frame, button.dataset.pcRecordAction, button);
             }
             if (e.target.closest('.pc-fe-image-edit-button')) {
                 const button = e.target.closest('.pc-fe-image-edit-button');
@@ -566,6 +700,7 @@
         });
 
         document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') closeActionMenus();
             if (!drawer || drawer.hidden) return;
             if (e.key === 'Escape') {
                 e.preventDefault();
@@ -612,11 +747,18 @@
         document.addEventListener('dragstart', (e) => {
             if (!editMode) return;
             const frame = e.target.closest && e.target.closest('[data-pc-record-uid]');
-            if (!frame || e.target.closest('[data-pc-field]') || e.target.closest('.pc-fe-move-button')) return;
+            if (!frame || !e.target.closest('.pc-fe-drag-handle')) {
+                e.preventDefault();
+                return;
+            }
             draggedFrame = frame;
+            dragSourceNextSibling = frame.nextSibling;
+            dragTargetContainer = frame.parentElement;
             frame.classList.add('pc-fe-dragging');
+            document.body.classList.add('pc-fe-is-dragging');
             e.dataTransfer.effectAllowed = 'move';
             e.dataTransfer.setData('text/plain', frame.dataset.pcRecordUid);
+            setStatus('Element ziehen und an der Einfügelinie ablegen', 'info', true);
         });
 
         function moveFrame(frame, direction) {
@@ -655,16 +797,34 @@
             const target = e.target.closest && e.target.closest('[data-pc-record-uid]');
             if (!target || target === draggedFrame || target.parentElement !== draggedFrame.parentElement) return;
             e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
             const rect = target.getBoundingClientRect();
             const after = e.clientY > rect.top + rect.height / 2;
-            target.parentElement.insertBefore(draggedFrame, after ? target.nextSibling : target);
+            target.parentElement.insertBefore(dropIndicator, after ? target.nextSibling : target);
+            dragTargetContainer = target.parentElement;
+        });
+
+        document.addEventListener('drop', (e) => {
+            if (!draggedFrame || !dropIndicator.parentElement) return;
+            e.preventDefault();
+            dropIndicator.parentElement.insertBefore(draggedFrame, dropIndicator);
         });
 
         document.addEventListener('dragend', async () => {
             if (!draggedFrame) return;
+            const moved = draggedFrame.nextSibling !== dragSourceNextSibling;
             draggedFrame.classList.remove('pc-fe-dragging');
+            document.body.classList.remove('pc-fe-is-dragging');
+            dropIndicator.remove();
+            const targetContainer = dragTargetContainer;
             draggedFrame = null;
-            if (await saveCurrentOrder()) {
+            dragSourceNextSibling = null;
+            dragTargetContainer = null;
+            if (!moved) {
+                setStatus('Position unverändert', 'info');
+                return;
+            }
+            if (await saveCurrentOrder(targetContainer)) {
                 setStatus('Reihenfolge gespeichert', 'success');
             } else {
                 setStatus('Reihenfolge nicht gespeichert', 'warning');
@@ -835,8 +995,9 @@
         return json;
     }
 
-    async function saveCurrentOrder() {
-        const frames = Array.from(document.querySelectorAll('[data-pc-record-uid]'))
+    async function saveCurrentOrder(container = null) {
+        const scope = container instanceof Element ? container : document;
+        const frames = Array.from(scope.querySelectorAll(':scope > [data-pc-record-uid]'))
             .filter(frame => frame.offsetParent !== null);
         if (frames.length < 2) return true;
 
@@ -850,7 +1011,7 @@
         return saveDataPayload(data);
     }
 
-    async function saveDataPayload(data) {
+    async function saveDataPayload(data, cmd = {}) {
         const url = TYPO3 && TYPO3.settings && TYPO3.settings.ajaxUrls ? TYPO3.settings.ajaxUrls['fe_editor_save'] : null;
         const formToken = TYPO3 && TYPO3.security ? TYPO3.security.feEditorToken : null;
         if (!url || !formToken) {
@@ -866,7 +1027,7 @@
             },
             body: new URLSearchParams({
                 data: JSON.stringify(data),
-                cmd: JSON.stringify({}),
+                cmd: JSON.stringify(cmd),
                 formToken
             })
         });

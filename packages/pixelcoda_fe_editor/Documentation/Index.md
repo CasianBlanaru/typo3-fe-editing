@@ -9,6 +9,8 @@ Start here:
 - [Image edit button](Images/image-edit-button.png)
 - [Contextual record canvas](Images/contextual-record-canvas.png)
 - [AI writing canvas](Images/ai-writing-canvas.png)
+- [Premium element actions](Images/premium-element-actions.png)
+- [Drag-and-drop insertion indicator](Images/drag-drop-indicator.png)
 - [Save route debug](Images/save-route-debug.png)
 
 ## Existing Frontends
@@ -32,6 +34,14 @@ Normal clicks stay in the side canvas. `Ctrl`/`Cmd`-click opens the full TYPO3 e
 The AI canvas provides field selection state and actions for improving, shortening, or expanding content. Provider keys remain server-side.
 
 The standard content-element wrapper convention, UserTSconfig switch and contextual editing approach align with the established concepts documented by [XIMA TYPO3 Frontend Edit](https://docs.typo3.org/p/xima/xima-typo3-frontend-edit/main/en-us/Index.html).
+
+## Content Sorting
+
+Content elements can be reordered directly in the frontend. Drag from the dedicated handle and drop at the visible insertion line. Arrow buttons provide the keyboard-accessible alternative. Only the affected content column is persisted through TYPO3 DataHandler.
+
+The adjacent element-action menu provides contextual editing, hiding, and deletion with an accessible confirmation dialog.
+
+The workflow review was informed by [xima-media/xima-typo3-frontend-edit](https://github.com/xima-media/xima-typo3-frontend-edit). Pixelcoda FE Editor remains an independent implementation and does not copy GPL source code.
 
 ## AI Configuration
 
