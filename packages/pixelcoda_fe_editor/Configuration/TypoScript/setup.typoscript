@@ -1,13 +1,29 @@
-# Template paths for our content element templates
-lib.contentElement {
-  templateRootPaths.920 = EXT:pixelcoda_fe_editor/Resources/Private/Templates/Content/
-  partialRootPaths.920  = EXT:pixelcoda_fe_editor/Resources/Private/Partials/
-  layoutRootPaths.920   = EXT:pixelcoda_fe_editor/Resources/Private/Layouts/
-}
+tt_content.pc_demo = COA
+tt_content.pc_demo {
+  10 = TEXT
+  10 {
+    field = header
+    htmlSpecialChars = 1
+    dataWrap = <article id="c{field:uid}" class="frame frame-default frame-type-pc_demo pc-demo" data-content-element-uid="{field:uid}"><h2 data-pc-field data-table="tt_content" data-uid="{field:uid}" data-field="header">|</h2>
+  }
 
-tt_content {
-  pc_demo =< lib.contentElement
-  pc_demo {
-    templateName = PcDemo
+  20 = TEXT
+  20 {
+    field = subheader
+    htmlSpecialChars = 1
+    dataWrap = <p class="lead" data-pc-field data-table="tt_content" data-uid="{field:uid}" data-field="subheader">|</p>
+  }
+
+  30 = TEXT
+  30 {
+    field = bodytext
+    parseFunc = < lib.parseFunc_RTE
+    dataWrap = <div data-pc-field data-table="tt_content" data-uid="{field:uid}" data-field="bodytext">|</div>
+  }
+
+  40 = TEXT
+  40 {
+    value = Element hinzufügen
+    dataWrap = <div class="pc-drop" data-pc-dropzone data-target-pid="{field:pid}" data-col-pos="{field:colPos}"><button type="button" class="pc-add">|</button></div></article>
   }
 }

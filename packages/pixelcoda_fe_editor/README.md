@@ -2,7 +2,7 @@
 
 Accessible frontend editing for TYPO3 12 LTS, TYPO3 13 LTS and TYPO3 14. Edit content directly on the rendered website with inline text editing, drag-and-drop sorting, contextual FormEngine records, image editing, headless-ready markers and an optional AI writing assistant.
 
-> Status: stable. Version 1.2.3 supports TYPO3 12 LTS, TYPO3 13 LTS and TYPO3 14.
+> Status: stable. Version 1.2.4 supports TYPO3 12 LTS, TYPO3 13 LTS and TYPO3 14.
 
 ![Pixelcoda TYPO3 frontend editing overview](Documentation/Images/editor-overview.png)
 
@@ -15,6 +15,7 @@ Accessible frontend editing for TYPO3 12 LTS, TYPO3 13 LTS and TYPO3 14. Edit co
 - Content creation through the `+` button.
 - Content sorting with drag-and-drop plus explicit `Up` / `Down` controls for large content elements.
 - Stable insertion indicator and column-scoped persistence while dragging content elements.
+- Automatic rollback and accessible status feedback when a reordered column cannot be saved.
 - Per-element action menu for contextual editing, hiding and confirmed deletion.
 - Image edit shortcut that opens the TYPO3 contextual record editor in an accessible side canvas.
 - Automatic frontend refresh after saving the contextual TYPO3 record editor.
@@ -152,7 +153,9 @@ In edit mode every content element gets a small control group:
 - arrow-up button to move one element up
 - arrow-down button to move one element down
 
-Dragging shows a stable insertion line and only changes the DOM when the element is dropped. The explicit arrow buttons remain the accessible keyboard alternative. Reordering updates `tt_content.sorting` through the save endpoint and is scoped to the affected content column.
+Dragging shows a stable insertion line and only changes the DOM when the element is dropped. The explicit arrow buttons remain the accessible keyboard alternative. Reordering updates `tt_content.sorting` through the save endpoint and is scoped to the affected content column. Stable TYPO3 wrapper UIDs keep elements with identical headings or text unambiguous. A visible live status confirms saving and success; failed requests restore the previous order.
+
+Enable the `Pixelcoda FE Editor` site set (`pixelcoda/fe-editor`) for the included editable `pc_demo` content element. The set provides its rendering definition and new-content wizard configuration.
 
 Each element also provides a compact action menu for opening the contextual editor, hiding the element, or deleting it after an accessible confirmation dialog. All writes use TYPO3 DataHandler and existing backend-user permissions.
 

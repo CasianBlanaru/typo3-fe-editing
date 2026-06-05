@@ -27,6 +27,7 @@
         let draggedFrame = null;
         let dragSourceNextSibling = null;
         let dragTargetContainer = null;
+        let dragOriginalOrder = [];
         let drawerTrigger = null;
         let aiAction = 'rewrite';
         const dropIndicator = document.createElement('div');
@@ -132,9 +133,19 @@
         }
 
         function findArticleForRecord(record) {
+            const uid = String(record.uid || '');
+            const exactMatch = document.getElementById('c' + uid)
+                || document.querySelector('[data-content-element-uid="' + uid + '"]')
+                || document.querySelector('[data-table="tt_content"][data-uid="' + uid + '"]')
+                || document.querySelector('.frame[data-uid="' + uid + '"]');
+            if (exactMatch && !exactMatch.closest('.pc-fe-toolbar')) {
+                return exactMatch;
+            }
+
             const header = normalizeText(record.header);
             const bodytext = normalizeText(record.bodytextText);
-            const candidates = Array.from(document.querySelectorAll('article, section, .frame'));
+            const candidates = Array.from(document.querySelectorAll('article, section, .frame'))
+                .filter(candidate => !candidate.dataset.pcRecordUid);
 
             return candidates.find(candidate => {
                 const candidateHeader = normalizeText(candidate.querySelector('h1, h2, h3, h4, h5, h6')?.textContent || '');
@@ -153,6 +164,7 @@
 
         function markFrame(frame, uid) {
             if (frame.closest('.pc-fe-toolbar')) return;
+            if (frame.dataset.pcRecordUid && frame.dataset.pcRecordUid !== String(uid)) return;
             frame.dataset.pcRecordUid = String(uid);
             frame.classList.toggle('pc-fe-draggable', editMode);
             if (frame.querySelector(':scope > .pc-fe-move-controls')) return;
@@ -597,10 +609,18 @@
                 const button = e.target.closest('.pc-fe-move-button');
                 const frame = button ? button.closest('[data-pc-record-uid]') : null;
                 const direction = button ? button.dataset.pcMove : '';
-                if (frame && moveFrame(frame, direction) && await saveCurrentOrder(frame.parentElement)) {
-                    setStatus('Reihenfolge gespeichert', 'success');
-                } else {
+                const container = frame?.parentElement || null;
+                const originalOrder = getFrameOrder(container);
+                if (!frame || !moveFrame(frame, direction)) {
                     setStatus('Kann nicht verschieben', 'warning');
+                } else {
+                    setStatus('Reihenfolge wird gespeichert...', 'info', true);
+                    if (await saveCurrentOrder(container)) {
+                        setStatus('Reihenfolge gespeichert', 'success');
+                    } else {
+                        restoreFrameOrder(container, originalOrder);
+                        setStatus('Speichern fehlgeschlagen, Reihenfolge wiederhergestellt', 'warning');
+                    }
                 }
             }
             if (e.target.closest('.pc-fe-actions-toggle')) {
@@ -763,6 +783,7 @@
             draggedFrame = frame;
             dragSourceNextSibling = frame.nextSibling;
             dragTargetContainer = frame.parentElement;
+            dragOriginalOrder = getFrameOrder(frame.parentElement);
             frame.classList.add('pc-fe-dragging');
             document.body.classList.add('pc-fe-is-dragging');
             e.dataTransfer.effectAllowed = 'move';
@@ -826,17 +847,21 @@
             document.body.classList.remove('pc-fe-is-dragging');
             dropIndicator.remove();
             const targetContainer = dragTargetContainer;
+            const originalOrder = dragOriginalOrder;
             draggedFrame = null;
             dragSourceNextSibling = null;
             dragTargetContainer = null;
+            dragOriginalOrder = [];
             if (!moved) {
                 setStatus('Position unverändert', 'info');
                 return;
             }
+            setStatus('Reihenfolge wird gespeichert...', 'info', true);
             if (await saveCurrentOrder(targetContainer)) {
                 setStatus('Reihenfolge gespeichert', 'success');
             } else {
-                setStatus('Reihenfolge nicht gespeichert', 'warning');
+                restoreFrameOrder(targetContainer, originalOrder);
+                setStatus('Speichern fehlgeschlagen, Reihenfolge wiederhergestellt', 'warning');
             }
         });
 
@@ -1010,14 +1035,53 @@
             .filter(frame => frame.offsetParent !== null);
         if (frames.length < 2) return true;
 
-        const data = { tt_content: {} };
-        frames.forEach((frame, index) => {
-            data.tt_content[frame.dataset.pcRecordUid] = {
-                sorting: (index + 1) * 256
+        const seenUids = new Set();
+        const orderedUids = [];
+        frames.forEach(frame => {
+            const uid = frame.dataset.pcRecordUid;
+            if (!uid || seenUids.has(uid)) return;
+            seenUids.add(uid);
+            orderedUids.push(uid);
+        });
+
+        if (seenUids.size !== frames.length) {
+            console.error('PixelCoda FE Editor: duplicate or missing record UID while sorting');
+            return false;
+        }
+
+        const pageId = Number(TYPO3?.settings?.feEditorPageId || 0);
+        if (!Number.isInteger(pageId) || pageId <= 0) {
+            console.error('PixelCoda FE Editor: missing page ID while sorting');
+            return false;
+        }
+
+        const cmd = { tt_content: {} };
+        orderedUids.forEach((uid, index) => {
+            cmd.tt_content[uid] = {
+                move: index === 0 ? pageId : -Number(orderedUids[index - 1])
             };
         });
 
-        return saveDataPayload(data);
+        return saveDataPayload({}, cmd);
+    }
+
+    function getFrameOrder(container) {
+        if (!(container instanceof Element)) return [];
+        return Array.from(container.querySelectorAll(':scope > [data-pc-record-uid]'))
+            .map(frame => frame.dataset.pcRecordUid)
+            .filter(Boolean);
+    }
+
+    function restoreFrameOrder(container, order) {
+        if (!(container instanceof Element) || !Array.isArray(order)) return;
+        const frames = new Map(
+            Array.from(container.querySelectorAll(':scope > [data-pc-record-uid]'))
+                .map(frame => [frame.dataset.pcRecordUid, frame])
+        );
+        order.forEach(uid => {
+            const frame = frames.get(uid);
+            if (frame) container.appendChild(frame);
+        });
     }
 
     async function saveDataPayload(data, cmd = {}) {

@@ -66,7 +66,9 @@ The standard content-element wrapper convention, UserTSconfig switch and context
 
 ## Content Sorting
 
-Content elements can be reordered directly in the frontend. Drag from the dedicated handle and drop at the visible insertion line. Arrow buttons provide the keyboard-accessible alternative. Only the affected content column is persisted through TYPO3 DataHandler.
+Content elements can be reordered directly in the frontend. Drag from the dedicated handle and drop at the visible insertion line. Arrow buttons provide the keyboard-accessible alternative. Only the affected content column is persisted through TYPO3 DataHandler. TYPO3 wrapper UIDs keep identical elements unambiguous, live status feedback confirms the save, and failed requests restore the previous order.
+
+Enable the `pixelcoda/fe-editor` site set to render the included editable `pc_demo` content element without manually including static TypoScript.
 
 The adjacent element-action menu provides contextual editing, hiding, and deletion with an accessible confirmation dialog.
 

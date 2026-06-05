@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.2.4 - 2026-06-05
+
+- Fixed drag-and-drop persistence for content elements with identical titles or text.
+- Persisted ordering through TYPO3 DataHandler move commands instead of direct sorting values.
+- Prefer stable TYPO3 content wrapper UIDs before fallback content matching.
+- Added automatic rollback when reordering cannot be saved.
+- Added clear accessible saving, success and failure feedback for reordering.
+- Added the `pixelcoda/fe-editor` site set so `pc_demo` renders without manually including static TypoScript.
+- Fixed the `pc_demo` TypoScript object copy and added deterministic content-element markup for frontend sorting.
+
 ## 1.2.3 - 2026-06-04
 
 - Reworked the TER icon for clearer recognition at small listing sizes.
