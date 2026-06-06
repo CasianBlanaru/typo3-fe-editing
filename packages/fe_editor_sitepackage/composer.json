@@ -2,7 +2,7 @@
     "name": "pixelcoda/fe-editor-sitepackage",
     "type": "typo3-cms-extension",
     "description": "Sitepackage for FE Editor Demo",
-    "homepage": "https://pixelcoda.com",
+    "homepage": "https://pixelcoda.de",
     "license": "GPL-2.0-or-later",
     "require": {
         "bk2k/bootstrap-package": "^15.0",

@@ -1730,7 +1730,7 @@
                 "GPL-2.0-or-later"
             ],
             "description": "Sitepackage for FE Editor Demo",
-            "homepage": "https://pixelcoda.com",
+            "homepage": "https://pixelcoda.de",
             "transport-options": {
                 "relative": true
             }
