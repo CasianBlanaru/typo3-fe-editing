@@ -14,7 +14,7 @@ class PixelCodaFE {
         this.config = {
             ajaxUrl: null,
             csrfToken: null,
-            autoSave: false, // Use manual save with draft state
+            autoSave: false, // Default to false to use draft state
             autoSaveDelay: 1000
         };
         this.storageKey = 'pc_fe_editor_draft';
@@ -106,15 +106,6 @@ class PixelCodaFE {
             return;
         }
 
-        // Discard button
-        if (target.closest('#pc-discard')) {
-            if (confirm('Are you sure you want to discard all unsaved changes?')) {
-                this.resetModifications();
-                location.reload();
-            }
-            return;
-        }
-
         // AI button
         if (target.closest('#pc-ai')) {
             await this.handleAIAction();
@@ -136,17 +127,13 @@ class PixelCodaFE {
             return;
         }
 
-        // Element toolbar actions
+        // Element actions
         if (target.closest('.pc-fe-move-up')) {
             await this.moveElement('up');
             return;
         }
         if (target.closest('.pc-fe-move-down')) {
             await this.moveElement('down');
-            return;
-        }
-        if (target.closest('.pc-fe-hide')) {
-            await this.toggleVisibility();
             return;
         }
         if (target.closest('.pc-fe-delete')) {
@@ -160,6 +147,20 @@ class PixelCodaFE {
      */
     handleMouseOver(event) {
         if (!this.editMode) return;
+
+        const record = event.target.closest('[data-pc-record]');
+        if (record && record !== this.activeRecord) {
+            this.activeRecord = record;
+            this.showElementToolbar(record);
+        }
+    }
+
+    /**
+     * Handle focus in events
+     */
+    handleFocusIn(event) {
+        if (!this.editMode) return;
+
         const record = event.target.closest('[data-pc-record]');
         if (record && record !== this.activeRecord) {
             this.activeRecord = record;
@@ -172,14 +173,15 @@ class PixelCodaFE {
      */
     handleDragStart(event) {
         if (!this.editMode) return;
-        const handle = event.target.closest('.pc-fe-drag-handle');
-        if (!handle) return;
+        const dragHandle = event.target.closest('.pc-fe-drag-handle');
+        if (!dragHandle) return;
 
-        const record = handle.closest('[data-pc-record]');
+        const record = dragHandle.closest('[data-pc-record]');
         if (!record) return;
 
         event.dataTransfer.setData('text/plain', record.dataset.uid);
         event.dataTransfer.effectAllowed = 'move';
+
         record.classList.add('pc-fe-dragging');
         document.body.classList.add('pc-fe-is-dragging');
     }
@@ -198,7 +200,9 @@ class PixelCodaFE {
         const rect = record.getBoundingClientRect();
         const midpoint = rect.top + rect.height / 2;
 
+        // Remove previous indicators
         document.querySelectorAll('.pc-fe-drop-indicator').forEach(el => el.remove());
+
         const indicator = document.createElement('div');
         indicator.className = 'pc-fe-drop-indicator';
 
@@ -256,6 +260,7 @@ class PixelCodaFE {
             });
 
             if (result.ok) {
+                this.announceToScreenReader('Element reordered. Reloading page...');
                 this.showNotification('Element reordered', 'success');
                 location.reload();
             } else {
@@ -274,18 +279,6 @@ class PixelCodaFE {
         document.querySelectorAll('.pc-fe-dragging').forEach(el => el.classList.remove('pc-fe-dragging'));
         document.querySelectorAll('.pc-fe-drop-indicator').forEach(el => el.remove());
         document.body.classList.remove('pc-fe-is-dragging');
-    }
-
-    /**
-     * Handle focus in events
-     */
-    handleFocusIn(event) {
-        if (!this.editMode) return;
-        const record = event.target.closest('[data-pc-record]');
-        if (record && record !== this.activeRecord) {
-            this.activeRecord = record;
-            this.showElementToolbar(record);
-        }
     }
 
     /**
@@ -342,10 +335,7 @@ class PixelCodaFE {
             toggleButton.classList.toggle('active', this.editMode);
         }
 
-        if (this.editMode) {
-            this.injectAddBetweenButtons();
-        } else {
-            this.removeAddBetweenButtons();
+        if (!this.editMode) {
             this.hideElementToolbar();
             this.activeRecord = null;
         }
@@ -465,7 +455,8 @@ class PixelCodaFE {
         fields.forEach(field => {
             let record = field.closest('[data-pc-record]');
             if (!record) {
-                // Find a container that seems to represent the whole record
+                // Find a container that seems to represent the whole record, usually the parent of multiple fields
+                // For now, let's just mark the parent if it contains the fields
                 record = field.parentElement;
                 record.setAttribute('data-pc-record', '');
                 record.setAttribute('data-table', field.dataset.table);
@@ -475,40 +466,85 @@ class PixelCodaFE {
     }
 
     /**
-     * Move element
+     * Initialize element toolbar
+     */
+    initElementToolbar() {
+        this.elementToolbar = document.createElement('div');
+        this.elementToolbar.id = 'pc-fe-element-toolbar';
+        this.elementToolbar.className = 'pc-fe-move-controls';
+        this.elementToolbar.hidden = true;
+        this.elementToolbar.innerHTML = `
+            <button class="pc-fe-move-button pc-fe-move-up" title="Move Up" aria-label="Move Up">↑</button>
+            <button class="pc-fe-move-button pc-fe-move-down" title="Move Down" aria-label="Move Down">↓</button>
+            <div class="pc-fe-drag-handle" draggable="true" title="Drag to reorder" aria-label="Drag to reorder">⋮⋮</div>
+            <button class="pc-fe-move-button pc-fe-delete pc-fe-danger-action" title="Delete" aria-label="Delete">×</button>
+        `;
+        document.body.appendChild(this.elementToolbar);
+    }
+
+    /**
+     * Show element toolbar for a record
+     */
+    showElementToolbar(record) {
+        if (!this.elementToolbar) return;
+
+        const rect = record.getBoundingClientRect();
+        this.elementToolbar.style.top = `${rect.top + window.scrollY}px`;
+        this.elementToolbar.style.left = `${rect.left + window.scrollX}px`;
+        this.elementToolbar.hidden = false;
+
+        record.classList.add('pc-fe-selected');
+    }
+
+    /**
+     * Hide element toolbar
+     */
+    hideElementToolbar() {
+        if (this.elementToolbar) {
+            this.elementToolbar.hidden = true;
+        }
+        document.querySelectorAll('.pc-fe-selected').forEach(el => el.classList.remove('pc-fe-selected'));
+    }
+
+    /**
+     * Move element up or down
      */
     async moveElement(direction) {
         if (!this.activeRecord) return;
-        const record = this.activeRecord;
-        const { table, uid } = record.dataset;
+        const { table, uid } = this.activeRecord.dataset;
 
         const targetElement = direction === 'up'
-            ? record.previousElementSibling
-            : record.nextElementSibling;
+            ? this.activeRecord.previousElementSibling
+            : this.activeRecord.nextElementSibling;
 
         if (!targetElement || !targetElement.hasAttribute('data-pc-record')) {
             this.showNotification(`Cannot move ${direction} further`, 'warning');
             return;
         }
 
-        // Optimistic UI
-        if (direction === 'up') {
-            targetElement.before(record);
-        } else {
-            targetElement.after(record);
-        }
-        this.showElementToolbar(record);
+        const targetUid = direction === 'up'
+            ? `-${targetElement.dataset.uid}` // Move before
+            : targetElement.dataset.uid; // Move after is tricky in DataHandler, usually move to -targetUid means BEFORE targetUid.
+                                         // Actually DataHandler move target:
+                                         // If target > 0, it's the PID (move to top of page)
+                                         // If target < 0, it's the UID of record AFTER which we move (actually move after -target)
+
+        // Correct TYPO3 DataHandler logic:
+        // move [table][uid] to [target]
+        // if target is > 0, move to the top of the page with that PID
+        // if target is < 0, move AFTER the record with UID = abs(target)
 
         let finalTarget;
         if (direction === 'up') {
-            const prev = record.previousElementSibling;
-            if (prev && prev.hasAttribute('data-pc-record')) {
-                finalTarget = -prev.dataset.uid;
+            const prevPrev = targetElement.previousElementSibling;
+            if (prevPrev && prevPrev.hasAttribute('data-pc-record')) {
+                finalTarget = -prevPrev.dataset.uid;
             } else {
-                finalTarget = record.dataset.pid || document.querySelector('[data-pid]')?.dataset.pid || 0;
+                // Move to top of page (pid)
+                finalTarget = targetElement.dataset.pid || document.querySelector('[data-pid]')?.dataset.pid || 0;
             }
         } else {
-            finalTarget = -record.dataset.uid;
+            finalTarget = -targetElement.dataset.uid;
         }
 
         try {
@@ -521,12 +557,12 @@ class PixelCodaFE {
 
             if (result.ok) {
                 this.showNotification('Element moved', 'success');
+                location.reload();
             } else {
                 throw new Error(result.message || 'Move failed');
             }
         } catch (error) {
             this.showNotification('Move failed: ' + error.message, 'error');
-            location.reload(); // Revert on failure
         }
     }
 
@@ -537,12 +573,7 @@ class PixelCodaFE {
         if (!this.activeRecord) return;
         if (!confirm('Are you sure you want to delete this element?')) return;
 
-        const record = this.activeRecord;
-        const { table, uid } = record.dataset;
-
-        // Optimistic UI
-        record.style.display = 'none';
-        this.hideElementToolbar();
+        const { table, uid } = this.activeRecord.dataset;
 
         try {
             const result = await this.sendRequest({
@@ -553,39 +584,13 @@ class PixelCodaFE {
 
             if (result.ok) {
                 this.showNotification('Element deleted', 'success');
-                record.remove();
+                this.activeRecord.remove();
+                this.hideElementToolbar();
             } else {
                 throw new Error(result.message || 'Delete failed');
             }
         } catch (error) {
-            record.style.display = '';
             this.showNotification('Delete failed: ' + error.message, 'error');
-        }
-    }
-
-    /**
-     * Toggle visibility
-     */
-    async toggleVisibility() {
-        if (!this.activeRecord) return;
-        const { table, uid } = this.activeRecord.dataset;
-
-        try {
-            const result = await this.sendRequest({
-                action: 'toggleVisibility',
-                table,
-                uid
-            });
-
-            if (result.ok) {
-                this.showNotification('Visibility toggled', 'success');
-                const isHidden = this.activeRecord.style.opacity === '0.5';
-                this.activeRecord.style.opacity = isHidden ? '1' : '0.5';
-            } else {
-                throw new Error(result.message || 'Visibility toggle failed');
-            }
-        } catch (error) {
-            this.showNotification('Toggle failed: ' + error.message, 'error');
         }
     }
 
@@ -610,6 +615,7 @@ class PixelCodaFE {
 
             if (result.ok) {
                 this.showNotification('Saved successfully', 'success');
+                this.announceToScreenReader('Changes saved successfully');
                 this.dispatchEvent('elementSaved', {
                     element,
                     table,
@@ -765,7 +771,7 @@ class PixelCodaFE {
         }
 
         const formData = new URLSearchParams({
-            formToken: this.config.csrfToken,
+            formToken: this.config.csrfToken, // SaveController expects formToken
             ...data
         });
 
@@ -899,6 +905,20 @@ class PixelCodaFE {
     }
 
     /**
+     * Announce message to screen reader
+     */
+    announceToScreenReader(message) {
+        const status = document.getElementById('pc-fe-status');
+        if (status) {
+            status.textContent = message;
+            status.setAttribute('aria-live', 'assertive');
+            setTimeout(() => {
+                this.updateSaveButtonState();
+            }, 3000);
+        }
+    }
+
+    /**
      * Reset all modifications
      */
     resetModifications() {
@@ -952,7 +972,11 @@ class PixelCodaFE {
             const [table, uid, field] = key.split(':');
             const element = document.querySelector(`[data-pc-field][data-table="${table}"][data-uid="${uid}"][data-field="${field}"]`);
             if (element) {
+                // Determine if we should use textContent or innerHTML based on field type
+                // In TYPO3, 'bodytext' is usually the only field allowed to have HTML
                 if (field === 'bodytext') {
+                    // For bodytext we allow HTML but we should ideally sanitize it
+                    // Since we are in a trusted BE context, we'll keep innerHTML but mark it
                     element.innerHTML = value;
                 } else {
                     element.textContent = value;
@@ -975,19 +999,23 @@ class PixelCodaFE {
      */
     updateSaveButtonState() {
         const saveButton = document.getElementById('pc-save');
-        const discardButton = document.getElementById('pc-discard');
         if (!saveButton) return;
 
         const hasChanges = Object.keys(this.draft).length > 0 || this.getModifiedElements().length > 0;
         saveButton.disabled = !hasChanges;
         saveButton.classList.toggle('dirty', hasChanges);
-        if (discardButton) discardButton.disabled = !hasChanges;
 
         const status = document.getElementById('pc-fe-status');
         if (status) {
-            status.textContent = hasChanges ? `${Object.keys(this.draft).length} unsaved changes` : '';
-            status.dataset.state = hasChanges ? 'warning' : '';
-            if (hasChanges) status.setAttribute('aria-live', 'polite');
+            const message = hasChanges ? `${Object.keys(this.draft).length} unsaved changes` : '';
+            if (status.textContent !== message) {
+                status.textContent = message;
+                status.dataset.state = hasChanges ? 'warning' : '';
+                // Trigger aria-live announcement if message changed to something non-empty
+                if (message) {
+                    status.setAttribute('aria-live', 'polite');
+                }
+            }
         }
     }
 }

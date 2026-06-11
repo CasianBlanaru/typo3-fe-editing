@@ -74,19 +74,8 @@ final class SaveController
                     return new JsonResponse(['error' => 'no_modify_permission'], 403);
                 }
                 $cmd[$table][(int)$uid] = ['move' => (int)$target];
-            } elseif ($action === 'toggleVisibility' && $table !== '' && $uid !== '') {
-                if (!array_key_exists($table, $allowedTables)) {
-                    return new JsonResponse(['error' => 'table_not_allowed'], 400);
-                }
-                if (!$beUser->isAdmin() && !$beUser->check('tables_modify', $table)) {
-                    return new JsonResponse(['error' => 'no_modify_permission'], 403);
-                }
-                $record = BackendUtility::getRecord($table, (int)$uid) ?: [];
-                $hiddenField = $GLOBALS['TCA'][$table]['ctrl']['enablecolumns']['disabled'] ?? 'hidden';
-                $newValue = (int)($record[$hiddenField] ?? 0) === 1 ? 0 : 1;
-                $data[$table][(int)$uid] = [$hiddenField => $newValue];
             } elseif ($table !== '' && $field !== '') {
-                if (!isset($allowedTables[$table]) || !in_array($field, $allowedTables[$table], true)) {
+                if (!array_key_exists($table, $allowedTables) || !in_array($field, $allowedTables[$table], true)) {
                     return new JsonResponse(['error' => 'field_not_allowed'], 400);
                 }
                 if (!ctype_digit($uid) || (int)$uid <= 0) {
@@ -120,7 +109,7 @@ final class SaveController
                 }
                 /** @var array<string, mixed> $decoded */
                 foreach ($decoded as $t => $rows) {
-                    if (!array_key_exists($t, $allowedTables) || !is_array($rows)) {
+                    if (!array_key_exists($t, $allowedTables) && is_array($rows) || !is_array($rows)) {
                         return new JsonResponse(['error' => 'table_not_allowed', 'table' => $t], 400);
                     }
                     if (!$beUser->isAdmin() && !$beUser->check('tables_modify', $t)) {
@@ -156,7 +145,7 @@ final class SaveController
                 }
                 /** @var array<string, mixed> $decodedCmd */
                 foreach ($decodedCmd as $t => $rows) {
-                    if (!array_key_exists($t, $allowedTables) || !is_array($rows)) {
+                    if (!array_key_exists($t, $allowedTables) && is_array($rows) || !is_array($rows)) {
                         return new JsonResponse(['error' => 'cmd_table_not_allowed', 'table' => $t], 400);
                     }
                     if (!$beUser->isAdmin() && !$beUser->check('tables_modify', $t)) {
