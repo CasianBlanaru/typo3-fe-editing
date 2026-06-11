@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace PixelCoda\FeEditor\Api;
@@ -16,7 +17,9 @@ final class AiController
 {
     private const MAX_INPUT_LENGTH = 6000;
 
-    public function __construct(private readonly AiConfiguration $aiConfiguration) {}
+    public function __construct(private readonly AiConfiguration $aiConfiguration)
+    {
+    }
 
     public function handle(ServerRequestInterface $request): JsonResponse
     {

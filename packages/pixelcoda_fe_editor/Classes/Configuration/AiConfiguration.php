@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace PixelCoda\FeEditor\Configuration;
@@ -7,7 +8,9 @@ use TYPO3\CMS\Core\Configuration\ExtensionConfiguration;
 
 final readonly class AiConfiguration
 {
-    public function __construct(private ExtensionConfiguration $extensionConfiguration) {}
+    public function __construct(private ExtensionConfiguration $extensionConfiguration)
+    {
+    }
 
     /**
      * @return array{enabled: bool, provider: string, apiKey: string, model: string, endpoint: string}

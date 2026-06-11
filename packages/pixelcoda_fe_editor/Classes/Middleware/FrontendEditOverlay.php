@@ -1,4 +1,5 @@
 <?php
+
 namespace PixelCoda\FeEditor\Middleware;
 
 use PixelCoda\FeEditor\Configuration\AiConfiguration;
@@ -20,7 +21,8 @@ final class FrontendEditOverlay implements MiddlewareInterface
         private readonly FormProtectionFactory $formProtectionFactory,
         private readonly UriBuilder $uriBuilder,
         private readonly AiConfiguration $aiConfiguration
-    ) {}
+    ) {
+    }
 
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
     {
