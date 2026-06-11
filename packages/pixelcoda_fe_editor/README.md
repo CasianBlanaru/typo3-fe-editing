@@ -10,7 +10,12 @@ Accessible frontend editing for TYPO3 12 LTS, TYPO3 13 LTS and TYPO3 14. Edit co
 
 - Responsive rounded action rail for authenticated TYPO3 backend users, with accessible contextual tooltips.
 - Inline editing for `tt_content.header`, `bodytext` and related text fields.
-- Autosave and manual save through TYPO3 `DataHandler`.
+- **Draft State**: Unsaved changes are persisted in `localStorage` and restored after page reloads.
+<<<<<<< Updated upstream
+=======
+- **Optimistic UI**: Immediate feedback for movement and deletion actions, with automatic rollback on error.
+>>>>>>> Stashed changes
+- Manual save through TYPO3 `DataHandler` with clear "dirty" state indication.
 - CSRF protection through TYPO3 backend `FormProtection`.
 - Content creation through the `+` button.
 - Content sorting with drag-and-drop plus explicit `Up` / `Down` controls for large content elements.
@@ -106,9 +111,17 @@ POST /typo3/ajax/fe-editor/save
 POST /typo3/ajax/fe-editor/ai
 ```
 
+### Headless Metadata
+
+The editor injects a structured JSON object (`window.TYPO3.settings.feEditorMetadata`) describing the page's editable structure, enabling better integration for decoupled or headless TYPO3 frontends.
+
 ## Editing Text
 
 Click `Edit`, select a marked headline or body text and edit directly in the frontend.
+
+### Draft State
+
+PixelCoda FE Editor implements a browser-side draft state. As you type, changes are automatically saved to `localStorage`. If you accidentally reload the page or navigate away, your changes will be restored when you return. The "Save" button in the toolbar will highlight (dirty state) and show the number of unsaved changes.
 
 The extension detects editable fields in two ways:
 
