@@ -107,6 +107,10 @@ POST /typo3/ajax/fe-editor/save
 POST /typo3/ajax/fe-editor/ai
 ```
 
+### Headless Metadata
+
+The editor injects a structured JSON object (`window.TYPO3.settings.feEditorMetadata`) describing the page's editable structure, enabling better integration for decoupled or headless TYPO3 frontends.
+
 ## Editing Text
 
 Click `Edit`, select a marked headline or body text and edit directly in the frontend.

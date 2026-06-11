@@ -347,6 +347,44 @@ class PixelCodaFE {
     }
 
     /**
+     * Inject "Add Between" buttons
+     */
+    injectAddBetweenButtons() {
+        const records = document.querySelectorAll('[data-pc-record]');
+        records.forEach((record, index) => {
+            if (index === 0) {
+                this.createAddButton(record, 'before');
+            }
+            this.createAddButton(record, 'after');
+        });
+    }
+
+    /**
+     * Create Add button
+     */
+    createAddButton(reference, position) {
+        const btn = document.createElement('button');
+        btn.className = 'pc-add-between';
+        btn.innerHTML = '+';
+        btn.setAttribute('aria-label', 'Add content here');
+        btn.dataset.targetPid = reference.dataset.pid || document.querySelector('[data-pid]')?.dataset.pid || 0;
+        btn.dataset.colPos = reference.dataset.colPos || 0;
+
+        if (position === 'before') {
+            reference.before(btn);
+        } else {
+            reference.after(btn);
+        }
+    }
+
+    /**
+     * Remove Add Between buttons
+     */
+    removeAddBetweenButtons() {
+        document.querySelectorAll('.pc-add-between').forEach(el => el.remove());
+    }
+
+    /**
      * Set editable state for all elements
      */
     setEditableState(editable) {
@@ -360,6 +398,45 @@ class PixelCodaFE {
                 element.removeAttribute('title');
             }
         });
+    }
+
+    /**
+     * Initialize element toolbar
+     */
+    initElementToolbar() {
+        this.elementToolbar = document.createElement('div');
+        this.elementToolbar.id = 'pc-fe-element-toolbar';
+        this.elementToolbar.className = 'pc-fe-move-controls';
+        this.elementToolbar.hidden = true;
+        this.elementToolbar.innerHTML = `
+            <button class="pc-fe-move-button pc-fe-move-up" title="Move Up" aria-label="Move Up">↑</button>
+            <button class="pc-fe-move-button pc-fe-move-down" title="Move Down" aria-label="Move Down">↓</button>
+            <button class="pc-fe-move-button pc-fe-hide" title="Hide/Show" aria-label="Toggle Visibility">👁</button>
+            <div class="pc-fe-drag-handle" draggable="true" title="Drag to reorder" aria-label="Drag to reorder">⋮⋮</div>
+            <button class="pc-fe-move-button pc-fe-delete pc-fe-danger-action" title="Delete" aria-label="Delete">×</button>
+        `;
+        document.body.appendChild(this.elementToolbar);
+    }
+
+    /**
+     * Show element toolbar
+     */
+    showElementToolbar(record) {
+        if (!this.elementToolbar) return;
+        const rect = record.getBoundingClientRect();
+        this.elementToolbar.style.top = `${rect.top + window.scrollY}px`;
+        this.elementToolbar.style.left = `${rect.left + window.scrollX}px`;
+        this.elementToolbar.hidden = false;
+        document.querySelectorAll('.pc-fe-selected').forEach(el => el.classList.remove('pc-fe-selected'));
+        record.classList.add('pc-fe-selected');
+    }
+
+    /**
+     * Hide element toolbar
+     */
+    hideElementToolbar() {
+        if (this.elementToolbar) this.elementToolbar.hidden = true;
+        document.querySelectorAll('.pc-fe-selected').forEach(el => el.classList.remove('pc-fe-selected'));
     }
 
     /**
