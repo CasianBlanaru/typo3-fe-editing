@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace PixelCoda\FeEditor\ViewHelpers;
@@ -104,7 +105,7 @@ class ContentEditableViewHelper extends AbstractTagBasedViewHelper
         $this->tag->addAttribute('class', 'pc-fe-editable');
 
         $placeholder = $this->getPlaceholderText($field);
-        
+
         if ($placeholder) {
             $this->tag->addAttribute('data-placeholder', $placeholder);
         }

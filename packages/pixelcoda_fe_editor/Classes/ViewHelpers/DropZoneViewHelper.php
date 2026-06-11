@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace PixelCoda\FeEditor\ViewHelpers;
@@ -103,11 +104,11 @@ class DropZoneViewHelper extends AbstractTagBasedViewHelper
         $this->tag->addAttribute('data-target-pid', $pid);
         $this->tag->addAttribute('data-col-pos', $colPos);
         $this->tag->addAttribute('class', 'pc-drop');
-        
+
         // Add button for creating new elements
         $buttonText = htmlspecialchars($this->stringArgument('buttonText', '+ Element hinzufügen'), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
         $button = '<button type="button" class="pc-add">' . $buttonText . '</button>';
-        
+
         $this->tag->setContent($content . $button);
         return $this->tag->render();
     }

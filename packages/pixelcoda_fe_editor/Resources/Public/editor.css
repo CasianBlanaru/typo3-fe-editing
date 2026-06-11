@@ -102,3 +102,120 @@
 @media (max-width:680px){.pc-fe-toolbar{right:.5rem;top:auto;bottom:.5rem;width:auto;padding:5px;transform:none}.pc-fe-toolbar-actions{flex-direction:row}.pc-fe-toolbar-divider{width:1px;height:30px;margin:0 2px}.pc-fe-button{width:46px;min-width:46px;height:46px}.pc-fe-button::before,.pc-fe-button::after{display:none}.pc-fe-toolbar-feedback{right:0;top:auto;bottom:calc(100% + 12px);max-width:calc(100vw - 1rem);min-height:42px;align-items:flex-end;transform:none}.pc-fe-toolbar-feedback::after{left:auto;right:20px;top:100%;border-color:#111827 transparent transparent transparent;transform:none}.pc-fe-drawer{width:100vw}.pc-fe-ai-actions{grid-template-columns:1fr}.pc-fe-ai-field{align-items:flex-start;flex-direction:column;gap:.25rem}}
 @media (prefers-color-scheme:dark){.pc-fe-toolbar{background:#172033;border-color:#4b5563}.pc-fe-drawer{background:#111827;color:#f9fafb;border-left-color:#374151}.pc-fe-drawer-header{background:#111827;border-bottom-color:#374151}.pc-fe-drawer-title{color:#f9fafb}.pc-fe-drawer-close,.pc-fe-ai-action,.pc-fe-ai-field{background:#172033;color:#f9fafb;border-color:#4b5563}.pc-fe-drawer-hint{background:#172033;color:#d1d5db;border-bottom-color:#374151}.pc-fe-ai-panel{background:#0f172a}.pc-fe-ai-panel .pc-fe-drawer-hint{background:transparent}.pc-fe-ai-actions legend{color:#e5e7eb}.pc-fe-ai-field span{color:#9ca3af}.pc-fe-ai-action:hover,.pc-fe-ai-action.active{background:#0c4a6e;color:#e0f2fe;border-color:#38bdf8}.pc-fe-ai-config{background:#064e3b;color:#d1fae5;border-color:#047857}.pc-fe-ai-config[data-state="warning"]{background:#431407;color:#ffedd5;border-color:#c2410c}.pc-fe-move-controls,.pc-fe-drag-handle,.pc-fe-move-button,.pc-fe-actions-toggle,.pc-fe-actions-menu,.pc-fe-confirm,.pc-fe-confirm button{background:#172033;color:#f9fafb;border-color:#4b5563}.pc-fe-actions-menu button,.pc-fe-actions-meta strong{color:#f9fafb}.pc-fe-actions-meta{border-bottom-color:#374151}.pc-fe-actions-meta span{color:#9ca3af}.pc-fe-actions-menu button:hover,.pc-fe-actions-menu button:focus{background:#0c4a6e;color:#e0f2fe}.pc-fe-confirm p{color:#d1d5db}}
 @media (prefers-reduced-motion:reduce){.pc-fe-button,.pc-fe-ai.is-loading .pc-fe-icon,.pc-fe-drawer,.pc-fe-drawer-backdrop{transition:none;animation:none}}
+
+/* Enhanced Feature Styles */
+.pc-add-between {
+    display: block;
+    width: 100%;
+    height: 4px;
+    margin: 10px 0;
+    background: #0ea5e9;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    position: relative;
+    opacity: 0;
+    transition: opacity 0.2s, height 0.2s;
+}
+
+.pc-add-between:hover, .pc-add-between:focus {
+    opacity: 1;
+    height: 20px;
+}
+
+.pc-add-between::after {
+    content: "+";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: #0ea5e9;
+    color: white;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.pc-fe-drop-indicator {
+    height: 4px;
+    background: #10B981;
+    margin: 10px 0;
+    border-radius: 4px;
+    box-shadow: 0 0 8px rgba(16,185,129,0.5);
+}
+
+.pc-fe-dragging {
+    opacity: 0.4;
+    cursor: grabbing;
+}
+
+.pc-fe-is-dragging * {
+    pointer-events: none !important;
+}
+
+.pc-fe-selected {
+    outline: 2px solid #0ea5e9;
+    outline-offset: 4px;
+}
+
+.pc-fe-move-controls {
+    position: absolute;
+    z-index: 10000;
+    display: flex;
+    gap: 4px;
+    background: white;
+    padding: 4px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    border: 1px solid #e5e7eb;
+}
+
+.pc-fe-move-button {
+    width: 32px;
+    height: 32px;
+    border: 1px solid #e5e7eb;
+    background: white;
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    transition: background 0.2s;
+}
+
+.pc-fe-move-button:hover {
+    background: #f3f4f6;
+    border-color: #d1d5db;
+}
+
+.pc-fe-danger-action:hover {
+    background: #fee2e2;
+    color: #ef4444;
+    border-color: #fecaca;
+}
+
+.pc-fe-drag-handle {
+    width: 32px;
+    height: 32px;
+    cursor: grab;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #9ca3af;
+    font-size: 20px;
+}
+
+.pc-fe-discard {
+    background: #6b7280 !important;
+    border-color: #6b7280 !important;
+}
+
+.pc-fe-discard:hover {
+    background: #4b5563 !important;
+}

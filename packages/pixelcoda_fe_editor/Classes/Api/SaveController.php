@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace PixelCoda\FeEditor\Api;
@@ -39,21 +40,52 @@ final class SaveController
                 'tt_content' => ['header', 'bodytext', 'subheader', 'frame_class', 'CType', 'colPos', 'pid', 'sorting', 'hidden'],
             ];
 
+            $action = $this->stringValue($parsed['action'] ?? '');
             $table = $this->stringValue($parsed['table'] ?? '');
             $uid = $this->stringValue($parsed['uid'] ?? '');
             $field = $this->stringValue($parsed['field'] ?? '');
             $value = $this->stringValue($parsed['value'] ?? '');
+            $target = $this->stringValue($parsed['target'] ?? '');
             $rawData = $this->stringValue($parsed['data'] ?? '');
             $rawCmd = $this->stringValue($parsed['cmd'] ?? '');
 
             /** @var array<string, array<int|string, array<string, mixed>>> $data */
             $data = [];
+            /** @var array<string, array<int|string, array<string, mixed>>> $cmd */
+            $cmd = [];
             /** @var array<string, mixed> $record */
             $record = [];
             $finalValue = null;
             $affectedPageIds = [];
 
-            if ($table !== '' && $field !== '') {
+            if ($action === 'delete' && $table !== '' && $uid !== '') {
+                if (!array_key_exists($table, $allowedTables)) {
+                    return new JsonResponse(['error' => 'table_not_allowed'], 400);
+                }
+                if (!$beUser->isAdmin() && !$beUser->check('tables_modify', $table)) {
+                    return new JsonResponse(['error' => 'no_modify_permission'], 403);
+                }
+                $cmd[$table][(int)$uid] = ['delete' => 1];
+            } elseif ($action === 'move' && $table !== '' && $uid !== '' && $target !== '') {
+                if (!array_key_exists($table, $allowedTables)) {
+                    return new JsonResponse(['error' => 'table_not_allowed'], 400);
+                }
+                if (!$beUser->isAdmin() && !$beUser->check('tables_modify', $table)) {
+                    return new JsonResponse(['error' => 'no_modify_permission'], 403);
+                }
+                $cmd[$table][(int)$uid] = ['move' => (int)$target];
+            } elseif ($action === 'toggleVisibility' && $table !== '' && $uid !== '') {
+                if (!array_key_exists($table, $allowedTables)) {
+                    return new JsonResponse(['error' => 'table_not_allowed'], 400);
+                }
+                if (!$beUser->isAdmin() && !$beUser->check('tables_modify', $table)) {
+                    return new JsonResponse(['error' => 'no_modify_permission'], 403);
+                }
+                $record = BackendUtility::getRecord($table, (int)$uid) ?: [];
+                $hiddenField = $GLOBALS['TCA'][$table]['ctrl']['enablecolumns']['disabled'] ?? 'hidden';
+                $newValue = (int)($record[$hiddenField] ?? 0) === 1 ? 0 : 1;
+                $data[$table][(int)$uid] = [$hiddenField => $newValue];
+            } elseif ($table !== '' && $field !== '') {
                 if (!isset($allowedTables[$table]) || !in_array($field, $allowedTables[$table], true)) {
                     return new JsonResponse(['error' => 'field_not_allowed'], 400);
                 }
@@ -88,7 +120,7 @@ final class SaveController
                 }
                 /** @var array<string, mixed> $decoded */
                 foreach ($decoded as $t => $rows) {
-                    if (!isset($allowedTables[$t]) || !is_array($rows)) {
+                    if (!array_key_exists($t, $allowedTables) || !is_array($rows)) {
                         return new JsonResponse(['error' => 'table_not_allowed', 'table' => $t], 400);
                     }
                     if (!$beUser->isAdmin() && !$beUser->check('tables_modify', $t)) {
@@ -117,8 +149,6 @@ final class SaveController
                 }
             }
 
-            /** @var array<string, array<int|string, array<string, mixed>>> $cmd */
-            $cmd = [];
             if ($rawCmd !== '') {
                 $decodedCmd = json_decode($rawCmd, true);
                 if (!is_array($decodedCmd)) {
@@ -126,7 +156,7 @@ final class SaveController
                 }
                 /** @var array<string, mixed> $decodedCmd */
                 foreach ($decodedCmd as $t => $rows) {
-                    if (!isset($allowedTables[$t]) || !is_array($rows)) {
+                    if (!array_key_exists($t, $allowedTables) || !is_array($rows)) {
                         return new JsonResponse(['error' => 'cmd_table_not_allowed', 'table' => $t], 400);
                     }
                     if (!$beUser->isAdmin() && !$beUser->check('tables_modify', $t)) {
@@ -172,7 +202,7 @@ final class SaveController
             if ($affectedPageIds !== []) {
                 GeneralUtility::makeInstance(CacheManager::class)->flushCachesInGroupByTags(
                     'pages',
-                    array_map(static fn(int $pageId): string => 'pageId_' . $pageId, $affectedPageIds)
+                    array_map(static fn (int $pageId): string => 'pageId_' . $pageId, $affectedPageIds)
                 );
             }
 

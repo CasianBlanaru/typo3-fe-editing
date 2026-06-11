@@ -1,4 +1,5 @@
 <?php
+
 namespace PixelCoda\FeEditor\Middleware;
 
 use PixelCoda\FeEditor\Configuration\AiConfiguration;
@@ -20,7 +21,8 @@ final class FrontendEditOverlay implements MiddlewareInterface
         private readonly FormProtectionFactory $formProtectionFactory,
         private readonly UriBuilder $uriBuilder,
         private readonly AiConfiguration $aiConfiguration
-    ) {}
+    ) {
+    }
 
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
     {
@@ -103,12 +105,21 @@ final class FrontendEditOverlay implements MiddlewareInterface
             'add' => $addIconPath,
         ], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT);
 
+        $metadata = [
+            'pageId' => $pageId,
+            'records' => $records,
+            'editableTables' => ['tt_content'],
+            'timestamp' => time(),
+        ];
+        $encodedMetadata = json_encode($metadata, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT);
+
         return <<<HTML
 <link rel="stylesheet" href="{$cssPath}">
 <div id="pc-fe-toolbar-root" class="pc-fe-toolbar" role="toolbar" aria-label="Frontend Editing">
   <div class="pc-fe-toolbar-actions">
     <button id="pc-edit-toggle" class="pc-fe-button" type="button" data-label="Frontend Editing aktivieren" aria-label="Frontend Editing aktivieren" aria-pressed="false"><img class="pc-fe-icon" src="{$editIconHtmlPath}" alt="" onerror="this.hidden=true"><span>Edit</span></button>
     <button id="pc-save" class="pc-fe-button pc-fe-save" type="button" data-label="Änderungen speichern" aria-label="Änderungen speichern" disabled><img class="pc-fe-icon" src="{$editIconHtmlPath}" alt="" onerror="this.hidden=true"><span>Save</span></button>
+    <button id="pc-discard" class="pc-fe-button pc-fe-discard" type="button" data-label="Änderungen verwerfen" aria-label="Änderungen verwerfen" disabled><span>Discard</span></button>
     <span class="pc-fe-toolbar-divider" aria-hidden="true"></span>
     <button id="pc-ai" class="pc-fe-button pc-fe-ai" type="button" data-label="AI-Schreibassistent öffnen" aria-label="AI-Schreibassistent öffnen"><img class="pc-fe-icon" src="{$aiIconHtmlPath}" alt="" onerror="this.hidden=true"><span>AI</span></button>
     <button id="pc-add-global" class="pc-fe-button pc-fe-icon-button" type="button" data-label="Neues Element hinzufügen" aria-label="Neues Element hinzufügen"><img class="pc-fe-icon" src="{$addIconHtmlPath}" alt="" onerror="this.hidden=true"></button>
@@ -158,6 +169,7 @@ window.TYPO3.settings.feEditorRecords = {$encodedRecords};
 window.TYPO3.settings.feEditorIcons = {$encodedIcons};
 window.TYPO3.settings.feEditorAiConfigured = {$encodedAiConfigured};
 window.TYPO3.settings.feEditorAiProvider = {$encodedAiProvider};
+window.TYPO3.settings.feEditorMetadata = {$encodedMetadata};
 window.TYPO3.settings.DateConfiguration = window.TYPO3.settings.DateConfiguration || {
   formats: { date: 'dd.MM.yyyy', time: 'HH:mm', datetime: 'dd.MM.yyyy HH:mm' }
 };

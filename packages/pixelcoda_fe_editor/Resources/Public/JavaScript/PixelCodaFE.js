@@ -7,14 +7,18 @@ class PixelCodaFE {
     constructor() {
         this.editMode = false;
         this.toolbar = null;
+        this.elementToolbar = null;
+        this.activeRecord = null;
         this.editableElements = [];
         this.eventDispatcher = new EventTarget();
         this.config = {
             ajaxUrl: null,
             csrfToken: null,
-            autoSave: true,
+            autoSave: false, // Use manual save with draft state
             autoSaveDelay: 1000
         };
+        this.storageKey = 'pc_fe_editor_draft';
+        this.draft = {};
 
         this.init();
     }
@@ -25,8 +29,13 @@ class PixelCodaFE {
     init() {
         this.loadConfig();
         this.initToolbar();
+        this.initElementToolbar();
+        this.loadDraft();
         this.bindEvents();
         this.scanEditableElements();
+        this.wrapRecords();
+        this.applyDraft();
+        this.updateSaveButtonState();
 
         // Dispatch ready event
         this.dispatchEvent('ready');
@@ -63,6 +72,13 @@ class PixelCodaFE {
      */
     bindEvents() {
         document.addEventListener('click', this.handleClick.bind(this));
+        document.addEventListener('mouseover', this.handleMouseOver.bind(this));
+        document.addEventListener('focusin', this.handleFocusIn.bind(this));
+        document.addEventListener('dragstart', this.handleDragStart.bind(this));
+        document.addEventListener('dragover', this.handleDragOver.bind(this));
+        document.addEventListener('drop', this.handleDrop.bind(this));
+        document.addEventListener('dragend', this.handleDragEnd.bind(this));
+        document.addEventListener('input', this.handleInput.bind(this));
         document.addEventListener('focusout', this.handleFocusOut.bind(this));
         document.addEventListener('keydown', this.handleKeyDown.bind(this));
 
@@ -81,6 +97,21 @@ class PixelCodaFE {
         // Edit toggle button
         if (target.closest('#pc-edit-toggle')) {
             this.toggleEditMode();
+            return;
+        }
+
+        // Save button
+        if (target.closest('#pc-save')) {
+            await this.saveAll();
+            return;
+        }
+
+        // Discard button
+        if (target.closest('#pc-discard')) {
+            if (confirm('Are you sure you want to discard all unsaved changes?')) {
+                this.resetModifications();
+                location.reload();
+            }
             return;
         }
 
@@ -104,6 +135,169 @@ class PixelCodaFE {
             await this.createGlobalElement();
             return;
         }
+
+        // Element toolbar actions
+        if (target.closest('.pc-fe-move-up')) {
+            await this.moveElement('up');
+            return;
+        }
+        if (target.closest('.pc-fe-move-down')) {
+            await this.moveElement('down');
+            return;
+        }
+        if (target.closest('.pc-fe-hide')) {
+            await this.toggleVisibility();
+            return;
+        }
+        if (target.closest('.pc-fe-delete')) {
+            await this.deleteElement();
+            return;
+        }
+    }
+
+    /**
+     * Handle mouse over events
+     */
+    handleMouseOver(event) {
+        if (!this.editMode) return;
+        const record = event.target.closest('[data-pc-record]');
+        if (record && record !== this.activeRecord) {
+            this.activeRecord = record;
+            this.showElementToolbar(record);
+        }
+    }
+
+    /**
+     * Handle drag start
+     */
+    handleDragStart(event) {
+        if (!this.editMode) return;
+        const handle = event.target.closest('.pc-fe-drag-handle');
+        if (!handle) return;
+
+        const record = handle.closest('[data-pc-record]');
+        if (!record) return;
+
+        event.dataTransfer.setData('text/plain', record.dataset.uid);
+        event.dataTransfer.effectAllowed = 'move';
+        record.classList.add('pc-fe-dragging');
+        document.body.classList.add('pc-fe-is-dragging');
+    }
+
+    /**
+     * Handle drag over
+     */
+    handleDragOver(event) {
+        if (!this.editMode) return;
+        const record = event.target.closest('[data-pc-record]');
+        if (!record || record.classList.contains('pc-fe-dragging')) return;
+
+        event.preventDefault();
+        event.dataTransfer.dropEffect = 'move';
+
+        const rect = record.getBoundingClientRect();
+        const midpoint = rect.top + rect.height / 2;
+
+        document.querySelectorAll('.pc-fe-drop-indicator').forEach(el => el.remove());
+        const indicator = document.createElement('div');
+        indicator.className = 'pc-fe-drop-indicator';
+
+        if (event.clientY < midpoint) {
+            record.before(indicator);
+            indicator.dataset.position = 'before';
+            indicator.dataset.targetUid = record.dataset.uid;
+        } else {
+            record.after(indicator);
+            indicator.dataset.position = 'after';
+            indicator.dataset.targetUid = record.dataset.uid;
+        }
+    }
+
+    /**
+     * Handle drop
+     */
+    async handleDrop(event) {
+        if (!this.editMode) return;
+        const indicator = document.querySelector('.pc-fe-drop-indicator');
+        if (!indicator) return;
+
+        event.preventDefault();
+        const draggedUid = event.dataTransfer.getData('text/plain');
+        const targetUid = indicator.dataset.targetUid;
+        const position = indicator.dataset.position;
+
+        if (draggedUid === targetUid) {
+            this.handleDragEnd();
+            return;
+        }
+
+        const draggedElement = document.querySelector(`[data-pc-record][data-uid="${draggedUid}"]`);
+        const table = draggedElement ? draggedElement.dataset.table : 'tt_content';
+
+        let finalTarget;
+        if (position === 'before') {
+            const targetElement = document.querySelector(`[data-pc-record][data-uid="${targetUid}"]`);
+            const prev = targetElement.previousElementSibling;
+            if (prev && prev.hasAttribute('data-pc-record')) {
+                finalTarget = -prev.dataset.uid;
+            } else {
+                finalTarget = targetElement.dataset.pid || document.querySelector('[data-pid]')?.dataset.pid || 0;
+            }
+        } else {
+            finalTarget = -targetUid;
+        }
+
+        try {
+            const result = await this.sendRequest({
+                action: 'move',
+                table,
+                uid: draggedUid,
+                target: finalTarget
+            });
+
+            if (result.ok) {
+                this.showNotification('Element reordered', 'success');
+                location.reload();
+            } else {
+                throw new Error(result.message || 'Reorder failed');
+            }
+        } catch (error) {
+            this.showNotification('Reorder failed: ' + error.message, 'error');
+            this.handleDragEnd();
+        }
+    }
+
+    /**
+     * Handle drag end
+     */
+    handleDragEnd() {
+        document.querySelectorAll('.pc-fe-dragging').forEach(el => el.classList.remove('pc-fe-dragging'));
+        document.querySelectorAll('.pc-fe-drop-indicator').forEach(el => el.remove());
+        document.body.classList.remove('pc-fe-is-dragging');
+    }
+
+    /**
+     * Handle focus in events
+     */
+    handleFocusIn(event) {
+        if (!this.editMode) return;
+        const record = event.target.closest('[data-pc-record]');
+        if (record && record !== this.activeRecord) {
+            this.activeRecord = record;
+            this.showElementToolbar(record);
+        }
+    }
+
+    /**
+     * Handle input events
+     */
+    handleInput(event) {
+        const element = event.target.closest('[data-pc-field]');
+        if (!element || !this.editMode) return;
+
+        this.markAsModified(element);
+        this.saveToDraft(element);
+        this.updateSaveButtonState();
     }
 
     /**
@@ -148,10 +342,56 @@ class PixelCodaFE {
             toggleButton.classList.toggle('active', this.editMode);
         }
 
+        if (this.editMode) {
+            this.injectAddBetweenButtons();
+        } else {
+            this.removeAddBetweenButtons();
+            this.hideElementToolbar();
+            this.activeRecord = null;
+        }
+
         this.dispatchEvent('editModeChanged', {
             editMode: this.editMode
         });
         console.log('PixelCoda FE: Edit mode', this.editMode ? 'enabled' : 'disabled');
+    }
+
+    /**
+     * Inject "Add Between" buttons
+     */
+    injectAddBetweenButtons() {
+        const records = document.querySelectorAll('[data-pc-record]');
+        records.forEach((record, index) => {
+            if (index === 0) {
+                this.createAddButton(record, 'before');
+            }
+            this.createAddButton(record, 'after');
+        });
+    }
+
+    /**
+     * Create Add button
+     */
+    createAddButton(reference, position) {
+        const btn = document.createElement('button');
+        btn.className = 'pc-add-between';
+        btn.innerHTML = '+';
+        btn.setAttribute('aria-label', 'Add content here');
+        btn.dataset.targetPid = reference.dataset.pid || document.querySelector('[data-pid]')?.dataset.pid || 0;
+        btn.dataset.colPos = reference.dataset.colPos || 0;
+
+        if (position === 'before') {
+            reference.before(btn);
+        } else {
+            reference.after(btn);
+        }
+    }
+
+    /**
+     * Remove Add Between buttons
+     */
+    removeAddBetweenButtons() {
+        document.querySelectorAll('.pc-add-between').forEach(el => el.remove());
     }
 
     /**
@@ -171,11 +411,182 @@ class PixelCodaFE {
     }
 
     /**
+     * Initialize element toolbar
+     */
+    initElementToolbar() {
+        this.elementToolbar = document.createElement('div');
+        this.elementToolbar.id = 'pc-fe-element-toolbar';
+        this.elementToolbar.className = 'pc-fe-move-controls';
+        this.elementToolbar.hidden = true;
+        this.elementToolbar.innerHTML = `
+            <button class="pc-fe-move-button pc-fe-move-up" title="Move Up" aria-label="Move Up">↑</button>
+            <button class="pc-fe-move-button pc-fe-move-down" title="Move Down" aria-label="Move Down">↓</button>
+            <button class="pc-fe-move-button pc-fe-hide" title="Hide/Show" aria-label="Toggle Visibility">👁</button>
+            <div class="pc-fe-drag-handle" draggable="true" title="Drag to reorder" aria-label="Drag to reorder">⋮⋮</div>
+            <button class="pc-fe-move-button pc-fe-delete pc-fe-danger-action" title="Delete" aria-label="Delete">×</button>
+        `;
+        document.body.appendChild(this.elementToolbar);
+    }
+
+    /**
+     * Show element toolbar
+     */
+    showElementToolbar(record) {
+        if (!this.elementToolbar) return;
+        const rect = record.getBoundingClientRect();
+        this.elementToolbar.style.top = `${rect.top + window.scrollY}px`;
+        this.elementToolbar.style.left = `${rect.left + window.scrollX}px`;
+        this.elementToolbar.hidden = false;
+        document.querySelectorAll('.pc-fe-selected').forEach(el => el.classList.remove('pc-fe-selected'));
+        record.classList.add('pc-fe-selected');
+    }
+
+    /**
+     * Hide element toolbar
+     */
+    hideElementToolbar() {
+        if (this.elementToolbar) this.elementToolbar.hidden = true;
+        document.querySelectorAll('.pc-fe-selected').forEach(el => el.classList.remove('pc-fe-selected'));
+    }
+
+    /**
      * Scan for editable elements
      */
     scanEditableElements() {
         this.editableElements = Array.from(document.querySelectorAll('[data-pc-field]'));
         console.log('PixelCoda FE: Found', this.editableElements.length, 'editable elements');
+    }
+
+    /**
+     * Wrap records with [data-pc-record] if they don't have it
+     */
+    wrapRecords() {
+        const fields = document.querySelectorAll('[data-pc-field]');
+        fields.forEach(field => {
+            let record = field.closest('[data-pc-record]');
+            if (!record) {
+                // Find a container that seems to represent the whole record
+                record = field.parentElement;
+                record.setAttribute('data-pc-record', '');
+                record.setAttribute('data-table', field.dataset.table);
+                record.setAttribute('data-uid', field.dataset.uid);
+            }
+        });
+    }
+
+    /**
+     * Move element
+     */
+    async moveElement(direction) {
+        if (!this.activeRecord) return;
+        const record = this.activeRecord;
+        const { table, uid } = record.dataset;
+
+        const targetElement = direction === 'up'
+            ? record.previousElementSibling
+            : record.nextElementSibling;
+
+        if (!targetElement || !targetElement.hasAttribute('data-pc-record')) {
+            this.showNotification(`Cannot move ${direction} further`, 'warning');
+            return;
+        }
+
+        // Optimistic UI
+        if (direction === 'up') {
+            targetElement.before(record);
+        } else {
+            targetElement.after(record);
+        }
+        this.showElementToolbar(record);
+
+        let finalTarget;
+        if (direction === 'up') {
+            const prev = record.previousElementSibling;
+            if (prev && prev.hasAttribute('data-pc-record')) {
+                finalTarget = -prev.dataset.uid;
+            } else {
+                finalTarget = record.dataset.pid || document.querySelector('[data-pid]')?.dataset.pid || 0;
+            }
+        } else {
+            finalTarget = -record.dataset.uid;
+        }
+
+        try {
+            const result = await this.sendRequest({
+                action: 'move',
+                table,
+                uid,
+                target: finalTarget
+            });
+
+            if (result.ok) {
+                this.showNotification('Element moved', 'success');
+            } else {
+                throw new Error(result.message || 'Move failed');
+            }
+        } catch (error) {
+            this.showNotification('Move failed: ' + error.message, 'error');
+            location.reload(); // Revert on failure
+        }
+    }
+
+    /**
+     * Delete element
+     */
+    async deleteElement() {
+        if (!this.activeRecord) return;
+        if (!confirm('Are you sure you want to delete this element?')) return;
+
+        const record = this.activeRecord;
+        const { table, uid } = record.dataset;
+
+        // Optimistic UI
+        record.style.display = 'none';
+        this.hideElementToolbar();
+
+        try {
+            const result = await this.sendRequest({
+                action: 'delete',
+                table,
+                uid
+            });
+
+            if (result.ok) {
+                this.showNotification('Element deleted', 'success');
+                record.remove();
+            } else {
+                throw new Error(result.message || 'Delete failed');
+            }
+        } catch (error) {
+            record.style.display = '';
+            this.showNotification('Delete failed: ' + error.message, 'error');
+        }
+    }
+
+    /**
+     * Toggle visibility
+     */
+    async toggleVisibility() {
+        if (!this.activeRecord) return;
+        const { table, uid } = this.activeRecord.dataset;
+
+        try {
+            const result = await this.sendRequest({
+                action: 'toggleVisibility',
+                table,
+                uid
+            });
+
+            if (result.ok) {
+                this.showNotification('Visibility toggled', 'success');
+                const isHidden = this.activeRecord.style.opacity === '0.5';
+                this.activeRecord.style.opacity = isHidden ? '1' : '0.5';
+            } else {
+                throw new Error(result.message || 'Visibility toggle failed');
+            }
+        } catch (error) {
+            this.showNotification('Toggle failed: ' + error.message, 'error');
+        }
     }
 
     /**
@@ -354,8 +765,8 @@ class PixelCodaFE {
         }
 
         const formData = new URLSearchParams({
-            ...data,
-            token: this.config.csrfToken
+            formToken: this.config.csrfToken,
+            ...data
         });
 
         const response = await fetch(this.config.ajaxUrl, {
@@ -457,7 +868,14 @@ class PixelCodaFE {
 
     onElementSaved(event) {
         console.log('Element saved:', event.detail);
+        const { table, uid, field } = event.detail;
+        const draftKey = `${table}:${uid}:${field}`;
+
+        delete this.draft[draftKey];
+        this.persistDraft();
+
         event.detail.element.classList.remove('pc-fe-modified');
+        this.updateSaveButtonState();
     }
 
     onElementCreated(event) {
@@ -487,6 +905,90 @@ class PixelCodaFE {
         this.editableElements.forEach(el => {
             el.classList.remove('pc-fe-modified');
         });
+        this.clearDraft();
+        this.updateSaveButtonState();
+    }
+
+    /**
+     * Load draft from localStorage
+     */
+    loadDraft() {
+        const stored = localStorage.getItem(this.storageKey);
+        if (stored) {
+            try {
+                this.draft = JSON.parse(stored);
+                console.log('PixelCoda FE: Draft loaded', this.draft);
+            } catch (e) {
+                console.error('PixelCoda FE: Failed to parse draft', e);
+                this.draft = {};
+            }
+        }
+    }
+
+    /**
+     * Save element to draft
+     */
+    saveToDraft(element) {
+        const { table, uid, field } = element.dataset;
+        const value = element.innerHTML;
+        const draftKey = `${table}:${uid}:${field}`;
+
+        this.draft[draftKey] = value;
+        this.persistDraft();
+    }
+
+    /**
+     * Persist draft to localStorage
+     */
+    persistDraft() {
+        localStorage.setItem(this.storageKey, JSON.stringify(this.draft));
+    }
+
+    /**
+     * Apply draft to elements
+     */
+    applyDraft() {
+        Object.entries(this.draft).forEach(([key, value]) => {
+            const [table, uid, field] = key.split(':');
+            const element = document.querySelector(`[data-pc-field][data-table="${table}"][data-uid="${uid}"][data-field="${field}"]`);
+            if (element) {
+                if (field === 'bodytext') {
+                    element.innerHTML = value;
+                } else {
+                    element.textContent = value;
+                }
+                this.markAsModified(element);
+            }
+        });
+    }
+
+    /**
+     * Clear draft
+     */
+    clearDraft() {
+        this.draft = {};
+        localStorage.removeItem(this.storageKey);
+    }
+
+    /**
+     * Update save button state
+     */
+    updateSaveButtonState() {
+        const saveButton = document.getElementById('pc-save');
+        const discardButton = document.getElementById('pc-discard');
+        if (!saveButton) return;
+
+        const hasChanges = Object.keys(this.draft).length > 0 || this.getModifiedElements().length > 0;
+        saveButton.disabled = !hasChanges;
+        saveButton.classList.toggle('dirty', hasChanges);
+        if (discardButton) discardButton.disabled = !hasChanges;
+
+        const status = document.getElementById('pc-fe-status');
+        if (status) {
+            status.textContent = hasChanges ? `${Object.keys(this.draft).length} unsaved changes` : '';
+            status.dataset.state = hasChanges ? 'warning' : '';
+            if (hasChanges) status.setAttribute('aria-live', 'polite');
+        }
     }
 }
 
