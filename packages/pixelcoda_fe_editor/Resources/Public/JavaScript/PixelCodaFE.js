@@ -9,14 +9,13 @@ class PixelCodaFE {
         this.editMode = false;
         this.toolbar = null;
         this.elementToolbar = null;
-        this.bubbleMenu = null;
         this.activeRecord = null;
         this.editableElements = [];
         this.eventDispatcher = new EventTarget();
         this.config = {
             ajaxUrl: null,
             csrfToken: null,
-            autoSave: false,
+            autoSave: false, // Default to false to use draft state
             autoSaveDelay: 1000
         };
         this.storageKey = 'pc_fe_editor_draft';
@@ -32,7 +31,6 @@ class PixelCodaFE {
         this.loadConfig();
         this.initToolbar();
         this.initElementToolbar();
-        this.initBubbleMenu();
         this.loadDraft();
         this.bindEvents();
         this.scanEditableElements();
@@ -98,12 +96,11 @@ class PixelCodaFE {
         document.addEventListener('click', this.handleClick.bind(this));
         document.addEventListener('mouseover', this.handleMouseOver.bind(this));
         document.addEventListener('focusin', this.handleFocusIn.bind(this));
-        document.addEventListener('input', this.handleInput.bind(this));
-        document.addEventListener('mouseup', this.handleSelection.bind(this));
         document.addEventListener('dragstart', this.handleDragStart.bind(this));
         document.addEventListener('dragover', this.handleDragOver.bind(this));
         document.addEventListener('drop', this.handleDrop.bind(this));
         document.addEventListener('dragend', this.handleDragEnd.bind(this));
+        document.addEventListener('input', this.handleInput.bind(this));
         document.addEventListener('focusout', this.handleFocusOut.bind(this));
         document.addEventListener('keydown', this.handleKeyDown.bind(this));
 
@@ -121,8 +118,15 @@ class PixelCodaFE {
             return;
         }
 
+        // Save button
         if (target.closest('#pc-save')) {
             await this.saveAll();
+            return;
+        }
+
+        // AI button
+        if (target.closest('#pc-ai')) {
+            await this.handleAIAction();
             return;
         }
 
@@ -138,6 +142,172 @@ class PixelCodaFE {
             await this.handleAIAction();
             return;
         }
+
+        // Element actions
+        if (target.closest('.pc-fe-move-up')) {
+            await this.moveElement('up');
+            return;
+        }
+        if (target.closest('.pc-fe-move-down')) {
+            await this.moveElement('down');
+            return;
+        }
+        if (target.closest('.pc-fe-delete')) {
+            await this.deleteElement();
+            return;
+        }
+    }
+
+    /**
+     * Handle mouse over events
+     */
+    handleMouseOver(event) {
+        if (!this.editMode) return;
+
+        const record = event.target.closest('[data-pc-record]');
+        if (record && record !== this.activeRecord) {
+            this.activeRecord = record;
+            this.showElementToolbar(record);
+        }
+    }
+
+    /**
+     * Handle focus in events
+     */
+    handleFocusIn(event) {
+        if (!this.editMode) return;
+
+        const record = event.target.closest('[data-pc-record]');
+        if (record && record !== this.activeRecord) {
+            this.activeRecord = record;
+            this.showElementToolbar(record);
+        }
+    }
+
+    /**
+     * Handle drag start
+     */
+    handleDragStart(event) {
+        if (!this.editMode) return;
+        const dragHandle = event.target.closest('.pc-fe-drag-handle');
+        if (!dragHandle) return;
+
+        const record = dragHandle.closest('[data-pc-record]');
+        if (!record) return;
+
+        event.dataTransfer.setData('text/plain', record.dataset.uid);
+        event.dataTransfer.effectAllowed = 'move';
+
+        record.classList.add('pc-fe-dragging');
+        document.body.classList.add('pc-fe-is-dragging');
+    }
+
+    /**
+     * Handle drag over
+     */
+    handleDragOver(event) {
+        if (!this.editMode) return;
+        const record = event.target.closest('[data-pc-record]');
+        if (!record || record.classList.contains('pc-fe-dragging')) return;
+
+        event.preventDefault();
+        event.dataTransfer.dropEffect = 'move';
+
+        const rect = record.getBoundingClientRect();
+        const midpoint = rect.top + rect.height / 2;
+
+        // Remove previous indicators
+        document.querySelectorAll('.pc-fe-drop-indicator').forEach(el => el.remove());
+
+        const indicator = document.createElement('div');
+        indicator.className = 'pc-fe-drop-indicator';
+
+        if (event.clientY < midpoint) {
+            record.before(indicator);
+            indicator.dataset.position = 'before';
+            indicator.dataset.targetUid = record.dataset.uid;
+        } else {
+            record.after(indicator);
+            indicator.dataset.position = 'after';
+            indicator.dataset.targetUid = record.dataset.uid;
+        }
+    }
+
+    /**
+     * Handle drop
+     */
+    async handleDrop(event) {
+        if (!this.editMode) return;
+        const indicator = document.querySelector('.pc-fe-drop-indicator');
+        if (!indicator) return;
+
+        event.preventDefault();
+        const draggedUid = event.dataTransfer.getData('text/plain');
+        const targetUid = indicator.dataset.targetUid;
+        const position = indicator.dataset.position;
+
+        if (draggedUid === targetUid) {
+            this.handleDragEnd();
+            return;
+        }
+
+        const draggedElement = document.querySelector(`[data-pc-record][data-uid="${draggedUid}"]`);
+        const table = draggedElement ? draggedElement.dataset.table : 'tt_content';
+
+        let finalTarget;
+        if (position === 'before') {
+            const targetElement = document.querySelector(`[data-pc-record][data-uid="${targetUid}"]`);
+            const prev = targetElement.previousElementSibling;
+            if (prev && prev.hasAttribute('data-pc-record')) {
+                finalTarget = -prev.dataset.uid;
+            } else {
+                finalTarget = targetElement.dataset.pid || document.querySelector('[data-pid]')?.dataset.pid || 0;
+            }
+        } else {
+            finalTarget = -targetUid;
+        }
+
+        try {
+            const result = await this.sendRequest({
+                action: 'move',
+                table,
+                uid: draggedUid,
+                target: finalTarget
+            });
+
+            if (result.ok) {
+                this.announceToScreenReader('Element reordered. Reloading page...');
+                this.showNotification('Element reordered', 'success');
+                location.reload();
+            } else {
+                throw new Error(result.message || 'Reorder failed');
+            }
+        } catch (error) {
+            this.showNotification('Reorder failed: ' + error.message, 'error');
+            this.handleDragEnd();
+        }
+    }
+
+    /**
+     * Handle drag end
+     */
+    handleDragEnd() {
+        document.querySelectorAll('.pc-fe-dragging').forEach(el => el.classList.remove('pc-fe-dragging'));
+        document.querySelectorAll('.pc-fe-drop-indicator').forEach(el => el.remove());
+        document.body.classList.remove('pc-fe-is-dragging');
+    }
+
+    /**
+     * Handle input events
+     */
+    handleInput(event) {
+        const element = event.target.closest('[data-pc-field]');
+        if (!element || !this.editMode) return;
+
+        this.markAsModified(element);
+        this.saveToDraft(element);
+        this.updateSaveButtonState();
+    }
 
         // Floating menu commands
         const bubbleBtn = target.closest('.pc-fe-bubble-menu button');
@@ -191,33 +361,267 @@ class PixelCodaFE {
             return;
         }
 
-        const range = selection.getRangeAt(0);
-        const rect = range.getBoundingClientRect();
+        if (!this.editMode) {
+            this.hideElementToolbar();
+            this.activeRecord = null;
+        }
 
-        this.bubbleMenu.style.top = `${rect.top + window.scrollY - 45}px`;
-        this.bubbleMenu.style.left = `${rect.left + window.scrollX + (rect.width / 2) - (this.bubbleMenu.offsetWidth / 2)}px`;
-        this.bubbleMenu.hidden = false;
+        this.dispatchEvent('editModeChanged', {
+            editMode: this.editMode
+        });
+        console.log('PixelCoda FE: Edit mode', this.editMode ? 'enabled' : 'disabled');
     }
 
-    executeCommand(command) {
-        let value = null;
-        if (command === 'createLink') {
-            value = prompt('Enter the URL:', 'https://');
-            if (!value) return;
-        }
-        document.execCommand(command, false, value);
+    /**
+     * Inject "Add Between" buttons
+     */
+    injectAddBetweenButtons() {
+        const records = document.querySelectorAll('[data-pc-record]');
+        records.forEach((record, index) => {
+            if (index === 0) {
+                this.createAddButton(record, 'before');
+            }
+            this.createAddButton(record, 'after');
+        });
+    }
 
-        // Mark active element as modified
-        const activeField = document.activeElement.closest('[data-pc-field]');
-        if (activeField) {
-            this.markAsModified(activeField);
-            this.saveToDraft(activeField);
-            this.updateSaveButtonState();
+    /**
+     * Create Add button
+     */
+    createAddButton(reference, position) {
+        const btn = document.createElement('button');
+        btn.className = 'pc-add-between';
+        btn.innerHTML = '+';
+        btn.setAttribute('aria-label', 'Add content here');
+        btn.dataset.targetPid = reference.dataset.pid || document.querySelector('[data-pid]')?.dataset.pid || 0;
+        btn.dataset.colPos = reference.dataset.colPos || 0;
+
+        if (position === 'before') {
+            reference.before(btn);
+        } else {
+            reference.after(btn);
         }
     }
 
     /**
-     * Optimistic UI Actions
+     * Remove Add Between buttons
+     */
+    removeAddBetweenButtons() {
+        document.querySelectorAll('.pc-add-between').forEach(el => el.remove());
+    }
+
+    /**
+     * Set editable state for all elements
+     */
+    setEditableState(editable) {
+        this.editableElements.forEach(element => {
+            element.contentEditable = editable ? 'true' : 'false';
+            element.classList.toggle('pc-fe-editable', editable);
+
+            if (editable) {
+                element.setAttribute('title', 'Click to edit');
+            } else {
+                element.removeAttribute('title');
+            }
+        });
+    }
+
+    /**
+     * Initialize element toolbar
+     */
+    initElementToolbar() {
+        this.elementToolbar = document.createElement('div');
+        this.elementToolbar.id = 'pc-fe-element-toolbar';
+        this.elementToolbar.className = 'pc-fe-move-controls';
+        this.elementToolbar.hidden = true;
+        this.elementToolbar.innerHTML = `
+            <button class="pc-fe-move-button pc-fe-move-up" title="Move Up" aria-label="Move Up">↑</button>
+            <button class="pc-fe-move-button pc-fe-move-down" title="Move Down" aria-label="Move Down">↓</button>
+            <button class="pc-fe-move-button pc-fe-hide" title="Hide/Show" aria-label="Toggle Visibility">👁</button>
+            <div class="pc-fe-drag-handle" draggable="true" title="Drag to reorder" aria-label="Drag to reorder">⋮⋮</div>
+            <button class="pc-fe-move-button pc-fe-delete pc-fe-danger-action" title="Delete" aria-label="Delete">×</button>
+        `;
+        document.body.appendChild(this.elementToolbar);
+    }
+
+    /**
+     * Show element toolbar
+     */
+    showElementToolbar(record) {
+        if (!this.elementToolbar) return;
+        const rect = record.getBoundingClientRect();
+        this.elementToolbar.style.top = `${rect.top + window.scrollY}px`;
+        this.elementToolbar.style.left = `${rect.left + window.scrollX}px`;
+        this.elementToolbar.hidden = false;
+        document.querySelectorAll('.pc-fe-selected').forEach(el => el.classList.remove('pc-fe-selected'));
+        record.classList.add('pc-fe-selected');
+    }
+
+    /**
+     * Hide element toolbar
+     */
+    hideElementToolbar() {
+        if (this.elementToolbar) this.elementToolbar.hidden = true;
+        document.querySelectorAll('.pc-fe-selected').forEach(el => el.classList.remove('pc-fe-selected'));
+    }
+
+    /**
+     * Scan for editable elements
+     */
+    scanEditableElements() {
+        this.editableElements = Array.from(document.querySelectorAll('[data-pc-field]'));
+        console.log('PixelCoda FE: Found', this.editableElements.length, 'editable elements');
+    }
+
+    /**
+     * Wrap records with [data-pc-record] if they don't have it
+     */
+    wrapRecords() {
+        const fields = document.querySelectorAll('[data-pc-field]');
+        fields.forEach(field => {
+            let record = field.closest('[data-pc-record]');
+            if (!record) {
+                // Find a container that seems to represent the whole record, usually the parent of multiple fields
+                // For now, let's just mark the parent if it contains the fields
+                record = field.parentElement;
+                record.setAttribute('data-pc-record', '');
+                record.setAttribute('data-table', field.dataset.table);
+                record.setAttribute('data-uid', field.dataset.uid);
+            }
+        });
+    }
+
+    /**
+     * Initialize element toolbar
+     */
+    initElementToolbar() {
+        this.elementToolbar = document.createElement('div');
+        this.elementToolbar.id = 'pc-fe-element-toolbar';
+        this.elementToolbar.className = 'pc-fe-move-controls';
+        this.elementToolbar.hidden = true;
+        this.elementToolbar.innerHTML = `
+            <button class="pc-fe-move-button pc-fe-move-up" title="Move Up" aria-label="Move Up">↑</button>
+            <button class="pc-fe-move-button pc-fe-move-down" title="Move Down" aria-label="Move Down">↓</button>
+            <div class="pc-fe-drag-handle" draggable="true" title="Drag to reorder" aria-label="Drag to reorder">⋮⋮</div>
+            <button class="pc-fe-move-button pc-fe-delete pc-fe-danger-action" title="Delete" aria-label="Delete">×</button>
+        `;
+        document.body.appendChild(this.elementToolbar);
+    }
+
+    /**
+     * Show element toolbar for a record
+     */
+    showElementToolbar(record) {
+        if (!this.elementToolbar) return;
+
+        const rect = record.getBoundingClientRect();
+        this.elementToolbar.style.top = `${rect.top + window.scrollY}px`;
+        this.elementToolbar.style.left = `${rect.left + window.scrollX}px`;
+        this.elementToolbar.hidden = false;
+
+        record.classList.add('pc-fe-selected');
+    }
+
+    /**
+     * Hide element toolbar
+     */
+    hideElementToolbar() {
+        if (this.elementToolbar) {
+            this.elementToolbar.hidden = true;
+        }
+        document.querySelectorAll('.pc-fe-selected').forEach(el => el.classList.remove('pc-fe-selected'));
+    }
+
+    /**
+     * Move element up or down
+     */
+    async moveElement(direction) {
+        if (!this.activeRecord) return;
+        const { table, uid } = this.activeRecord.dataset;
+
+        const targetElement = direction === 'up'
+            ? this.activeRecord.previousElementSibling
+            : this.activeRecord.nextElementSibling;
+
+        if (!targetElement || !targetElement.hasAttribute('data-pc-record')) {
+            this.showNotification(`Cannot move ${direction} further`, 'warning');
+            return;
+        }
+
+        const targetUid = direction === 'up'
+            ? `-${targetElement.dataset.uid}` // Move before
+            : targetElement.dataset.uid; // Move after is tricky in DataHandler, usually move to -targetUid means BEFORE targetUid.
+                                         // Actually DataHandler move target:
+                                         // If target > 0, it's the PID (move to top of page)
+                                         // If target < 0, it's the UID of record AFTER which we move (actually move after -target)
+
+        // Correct TYPO3 DataHandler logic:
+        // move [table][uid] to [target]
+        // if target is > 0, move to the top of the page with that PID
+        // if target is < 0, move AFTER the record with UID = abs(target)
+
+        let finalTarget;
+        if (direction === 'up') {
+            const prevPrev = targetElement.previousElementSibling;
+            if (prevPrev && prevPrev.hasAttribute('data-pc-record')) {
+                finalTarget = -prevPrev.dataset.uid;
+            } else {
+                // Move to top of page (pid)
+                finalTarget = targetElement.dataset.pid || document.querySelector('[data-pid]')?.dataset.pid || 0;
+            }
+        } else {
+            finalTarget = -targetElement.dataset.uid;
+        }
+
+        try {
+            const result = await this.sendRequest({
+                action: 'move',
+                table,
+                uid,
+                target: finalTarget
+            });
+
+            if (result.ok) {
+                this.showNotification('Element moved', 'success');
+                location.reload();
+            } else {
+                throw new Error(result.message || 'Move failed');
+            }
+        } catch (error) {
+            this.showNotification('Move failed: ' + error.message, 'error');
+        }
+    }
+
+    /**
+     * Delete element
+     */
+    async deleteElement() {
+        if (!this.activeRecord) return;
+        if (!confirm('Are you sure you want to delete this element?')) return;
+
+        const { table, uid } = this.activeRecord.dataset;
+
+        try {
+            const result = await this.sendRequest({
+                action: 'delete',
+                table,
+                uid
+            });
+
+            if (result.ok) {
+                this.showNotification('Element deleted', 'success');
+                this.activeRecord.remove();
+                this.hideElementToolbar();
+            } else {
+                throw new Error(result.message || 'Delete failed');
+            }
+        } catch (error) {
+            this.showNotification('Delete failed: ' + error.message, 'error');
+        }
+    }
+
+    /**
+     * Save a single element
      */
     async moveElement(direction) {
         if (!this.activeRecord) return;
@@ -246,8 +650,17 @@ class PixelCodaFE {
         try {
             const result = await this.sendRequest({ action: 'move', table, uid, target: finalTarget });
             if (result.ok) {
-                this.announceToScreenReader('Element moved successfully');
-                this.showNotification('Element moved', 'success');
+                this.showNotification('Saved successfully', 'success');
+                this.announceToScreenReader('Changes saved successfully');
+                this.dispatchEvent('elementSaved', {
+                    element,
+                    table,
+                    uid,
+                    field,
+                    value
+                });
+            } else {
+                throw new Error(result.message || 'Save failed');
             }
             else throw new Error(result.message);
         } catch (error) {
@@ -410,13 +823,9 @@ class PixelCodaFE {
             this.activeRecord = null;
         }
 
-        this.dispatchEvent('editModeChanged', { editMode: this.editMode });
-    }
-
-    injectAddBetweenButtons() {
-        document.querySelectorAll('[data-pc-record]').forEach((record, index) => {
-            if (index === 0) this.createAddButton(record, 'before');
-            this.createAddButton(record, 'after');
+        const formData = new URLSearchParams({
+            formToken: this.config.csrfToken, // SaveController expects formToken
+            ...data
         });
     }
 
@@ -592,16 +1001,16 @@ class PixelCodaFE {
         }
     }
 
-    async saveAll() {
-        const modified = this.editableElements.filter(el => el.classList.contains('pc-fe-modified'));
-        if (modified.length === 0) return this.showNotification('No changes', 'info');
-        this.showNotification(`Saving ${modified.length} elements...`, 'info');
-        try {
-            await Promise.all(modified.map(el => this.saveElement(el)));
-            this.showNotification('All saved', 'success');
-        } catch (error) {
-            this.showNotification('Some failed', 'error');
-        }
+    onElementSaved(event) {
+        console.log('Element saved:', event.detail);
+        const { table, uid, field } = event.detail;
+        const draftKey = `${table}:${uid}:${field}`;
+
+        delete this.draft[draftKey];
+        this.persistDraft();
+
+        event.detail.element.classList.remove('pc-fe-modified');
+        this.updateSaveButtonState();
     }
 
     async sendRequest(data) {
@@ -649,6 +1058,23 @@ class PixelCodaFE {
         this.updateSaveButtonState();
     }
 
+    /**
+     * Announce message to screen reader
+     */
+    announceToScreenReader(message) {
+        const status = document.getElementById('pc-fe-status');
+        if (status) {
+            status.textContent = message;
+            status.setAttribute('aria-live', 'assertive');
+            setTimeout(() => {
+                this.updateSaveButtonState();
+            }, 3000);
+        }
+    }
+
+    /**
+     * Reset all modifications
+     */
     resetModifications() {
         this.editableElements.forEach(el => el.classList.remove('pc-fe-modified'));
         this.clearDraft();
@@ -662,6 +1088,98 @@ class PixelCodaFE {
             el.contentEditable = editable ? 'true' : 'false';
             el.classList.toggle('pc-fe-editable', editable);
         });
+        this.clearDraft();
+        this.updateSaveButtonState();
+    }
+
+    /**
+     * Load draft from localStorage
+     */
+    loadDraft() {
+        const stored = localStorage.getItem(this.storageKey);
+        if (stored) {
+            try {
+                this.draft = JSON.parse(stored);
+                console.log('PixelCoda FE: Draft loaded', this.draft);
+            } catch (e) {
+                console.error('PixelCoda FE: Failed to parse draft', e);
+                this.draft = {};
+            }
+        }
+    }
+
+    /**
+     * Save element to draft
+     */
+    saveToDraft(element) {
+        const { table, uid, field } = element.dataset;
+        const value = element.innerHTML;
+        const draftKey = `${table}:${uid}:${field}`;
+
+        this.draft[draftKey] = value;
+        this.persistDraft();
+    }
+
+    /**
+     * Persist draft to localStorage
+     */
+    persistDraft() {
+        localStorage.setItem(this.storageKey, JSON.stringify(this.draft));
+    }
+
+    /**
+     * Apply draft to elements
+     */
+    applyDraft() {
+        Object.entries(this.draft).forEach(([key, value]) => {
+            const [table, uid, field] = key.split(':');
+            const element = document.querySelector(`[data-pc-field][data-table="${table}"][data-uid="${uid}"][data-field="${field}"]`);
+            if (element) {
+                // Determine if we should use textContent or innerHTML based on field type
+                // In TYPO3, 'bodytext' is usually the only field allowed to have HTML
+                if (field === 'bodytext') {
+                    // For bodytext we allow HTML but we should ideally sanitize it
+                    // Since we are in a trusted BE context, we'll keep innerHTML but mark it
+                    element.innerHTML = value;
+                } else {
+                    element.textContent = value;
+                }
+                this.markAsModified(element);
+            }
+        });
+    }
+
+    /**
+     * Clear draft
+     */
+    clearDraft() {
+        this.draft = {};
+        localStorage.removeItem(this.storageKey);
+    }
+
+    /**
+     * Update save button state
+     */
+    updateSaveButtonState() {
+        const saveButton = document.getElementById('pc-save');
+        if (!saveButton) return;
+
+        const hasChanges = Object.keys(this.draft).length > 0 || this.getModifiedElements().length > 0;
+        saveButton.disabled = !hasChanges;
+        saveButton.classList.toggle('dirty', hasChanges);
+
+        const status = document.getElementById('pc-fe-status');
+        if (status) {
+            const message = hasChanges ? `${Object.keys(this.draft).length} unsaved changes` : '';
+            if (status.textContent !== message) {
+                status.textContent = message;
+                status.dataset.state = hasChanges ? 'warning' : '';
+                // Trigger aria-live announcement if message changed to something non-empty
+                if (message) {
+                    status.setAttribute('aria-live', 'polite');
+                }
+            }
+        }
     }
 
     scanEditableElements() {
