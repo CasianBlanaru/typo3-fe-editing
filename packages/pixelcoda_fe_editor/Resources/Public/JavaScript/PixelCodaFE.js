@@ -1,6 +1,7 @@
 /**
- * PixelCoda Frontend Editor - Modern JavaScript Architecture
- * Inspired by the original frontend_editing extension but simplified and modernized
+ * PixelCoda Frontend Editor - Advanced JavaScript Architecture
+ * Comprehensive feature set: Draft State, Optimistic UI, Drag & Drop,
+ * Floating Formatting, and Content Type Picker.
  */
 
 class PixelCodaFE {
@@ -37,7 +38,6 @@ class PixelCodaFE {
         this.applyDraft();
         this.updateSaveButtonState();
 
-        // Dispatch ready event
         this.dispatchEvent('ready');
     }
 
@@ -45,26 +45,48 @@ class PixelCodaFE {
      * Load configuration from TYPO3 globals
      */
     loadConfig() {
-        if (window.TYPO3 ? .settings ? .ajaxUrls ? . ['fe_editor_save']) {
+        if (window.TYPO3?.settings?.ajaxUrls?.['fe_editor_save']) {
             this.config.ajaxUrl = window.TYPO3.settings.ajaxUrls['fe_editor_save'];
         }
-
-        if (window.TYPO3 ? .security ? .csrfToken) {
-            this.config.csrfToken = window.TYPO3.security.csrfToken;
+        if (window.TYPO3?.security?.feEditorToken) {
+            this.config.csrfToken = window.TYPO3.security.feEditorToken;
         }
-
-        console.log('PixelCoda FE: Configuration loaded', this.config);
     }
 
     /**
-     * Initialize toolbar
+     * Initialize toolbars
      */
     initToolbar() {
         this.toolbar = document.getElementById('pc-fe-toolbar-root');
-        if (this.toolbar) {
-            this.toolbar.hidden = false;
-            console.log('PixelCoda FE: Toolbar initialized');
-        }
+        if (this.toolbar) this.toolbar.hidden = false;
+    }
+
+    initElementToolbar() {
+        this.elementToolbar = document.createElement('div');
+        this.elementToolbar.id = 'pc-fe-element-toolbar';
+        this.elementToolbar.className = 'pc-fe-move-controls';
+        this.elementToolbar.hidden = true;
+        this.elementToolbar.innerHTML = `
+            <button class="pc-fe-move-button pc-fe-move-up" title="Move Up" aria-label="Move Up">↑</button>
+            <button class="pc-fe-move-button pc-fe-move-down" title="Move Down" aria-label="Move Down">↓</button>
+            <button class="pc-fe-move-button pc-fe-hide" title="Hide/Show" aria-label="Toggle Visibility">👁</button>
+            <div class="pc-fe-drag-handle" draggable="true" title="Drag to reorder" aria-label="Drag to reorder">⋮⋮</div>
+            <button class="pc-fe-move-button pc-fe-delete pc-fe-danger-action" title="Delete" aria-label="Delete">×</button>
+        `;
+        document.body.appendChild(this.elementToolbar);
+    }
+
+    initBubbleMenu() {
+        this.bubbleMenu = document.createElement('div');
+        this.bubbleMenu.className = 'pc-fe-bubble-menu';
+        this.bubbleMenu.hidden = true;
+        this.bubbleMenu.innerHTML = `
+            <button type="button" data-command="bold" title="Bold"><strong>B</strong></button>
+            <button type="button" data-command="italic" title="Italic"><em>I</em></button>
+            <button type="button" data-command="createLink" title="Link">🔗</button>
+            <button type="button" data-command="unlink" title="Unlink">unlink</button>
+        `;
+        document.body.appendChild(this.bubbleMenu);
     }
 
     /**
@@ -82,10 +104,7 @@ class PixelCodaFE {
         document.addEventListener('focusout', this.handleFocusOut.bind(this));
         document.addEventListener('keydown', this.handleKeyDown.bind(this));
 
-        // Custom events
-        this.addEventListener('editModeChanged', this.onEditModeChanged.bind(this));
         this.addEventListener('elementSaved', this.onElementSaved.bind(this));
-        this.addEventListener('elementCreated', this.onElementCreated.bind(this));
     }
 
     /**
@@ -94,7 +113,6 @@ class PixelCodaFE {
     async handleClick(event) {
         const target = event.target;
 
-        // Edit toggle button
         if (target.closest('#pc-edit-toggle')) {
             this.toggleEditMode();
             return;
@@ -112,18 +130,16 @@ class PixelCodaFE {
             return;
         }
 
-        // Add element buttons
-        if (target.closest('.pc-add')) {
-            const dropzone = target.closest('[data-pc-dropzone]');
-            if (dropzone) {
-                await this.createContentElement(dropzone.dataset.targetPid, dropzone.dataset.colPos);
+        if (target.closest('#pc-discard')) {
+            if (confirm('Are you sure you want to discard all unsaved changes?')) {
+                this.resetModifications();
+                location.reload();
             }
             return;
         }
 
-        // Global add button
-        if (target.closest('#pc-add-global')) {
-            await this.createGlobalElement();
+        if (target.closest('#pc-ai')) {
+            await this.handleAIAction();
             return;
         }
 
@@ -293,46 +309,56 @@ class PixelCodaFE {
         this.updateSaveButtonState();
     }
 
-    /**
-     * Handle focus out events (auto-save)
-     */
-    async handleFocusOut(event) {
-        const element = event.target.closest('[data-pc-field]');
-        if (!element || !this.editMode) return;
+        // Floating menu commands
+        const bubbleBtn = target.closest('.pc-fe-bubble-menu button');
+        if (bubbleBtn) {
+            this.executeCommand(bubbleBtn.dataset.command);
+            return;
+        }
 
-        if (this.config.autoSave) {
-            await this.saveElement(element);
+        // Element actions
+        if (target.closest('.pc-fe-move-up')) {
+            await this.moveElement('up');
+            return;
+        }
+        if (target.closest('.pc-fe-move-down')) {
+            await this.moveElement('down');
+            return;
+        }
+        if (target.closest('.pc-fe-hide')) {
+            await this.toggleVisibility();
+            return;
+        }
+        if (target.closest('.pc-fe-delete')) {
+            await this.deleteElement();
+            return;
+        }
+
+        // Add buttons
+        if (target.closest('.pc-add') || target.closest('.pc-add-between')) {
+            const dropzone = target.closest('[data-target-pid]');
+            if (dropzone) {
+                await this.showContentTypePicker(dropzone.dataset.targetPid, dropzone.dataset.colPos);
+            }
+            return;
+        }
+
+        if (target.closest('#pc-add-global')) {
+            const pid = document.querySelector('[data-pid]')?.dataset.pid || '1';
+            await this.showContentTypePicker(pid, '0');
+            return;
         }
     }
 
     /**
-     * Handle keyboard shortcuts
+     * Formatting logic
      */
-    handleKeyDown(event) {
-        // Ctrl+S or Cmd+S to save
-        if ((event.ctrlKey || event.metaKey) && event.key === 's') {
-            event.preventDefault();
-            this.saveAll();
+    handleSelection() {
+        if (!this.editMode) return;
+        const selection = window.getSelection();
+        if (selection.isCollapsed || !selection.toString().trim()) {
+            this.bubbleMenu.hidden = true;
             return;
-        }
-
-        // Escape to exit edit mode
-        if (event.key === 'Escape' && this.editMode) {
-            this.toggleEditMode();
-            return;
-        }
-    }
-
-    /**
-     * Toggle edit mode
-     */
-    toggleEditMode() {
-        this.editMode = !this.editMode;
-        this.setEditableState(this.editMode);
-
-        const toggleButton = document.getElementById('pc-edit-toggle');
-        if (toggleButton) {
-            toggleButton.classList.toggle('active', this.editMode);
         }
 
         if (!this.editMode) {
@@ -597,22 +623,32 @@ class PixelCodaFE {
     /**
      * Save a single element
      */
-    async saveElement(element) {
-        const {
-            table,
-            uid,
-            field
-        } = element.dataset;
-        const value = element.innerHTML;
+    async moveElement(direction) {
+        if (!this.activeRecord) return;
+        const record = this.activeRecord;
+        const { table, uid } = record.dataset;
+        const targetElement = direction === 'up' ? record.previousElementSibling : record.nextElementSibling;
+
+        if (!targetElement || !targetElement.hasAttribute('data-pc-record')) {
+            this.showNotification(`Cannot move ${direction} further`, 'warning');
+            return;
+        }
+
+        // Move DOM immediately
+        if (direction === 'up') targetElement.before(record);
+        else targetElement.after(record);
+        this.showElementToolbar(record);
+
+        let finalTarget;
+        if (direction === 'up') {
+            const prev = record.previousElementSibling;
+            finalTarget = (prev && prev.hasAttribute('data-pc-record')) ? -prev.dataset.uid : (record.dataset.pid || 0);
+        } else {
+            finalTarget = -record.dataset.uid;
+        }
 
         try {
-            const result = await this.saveField({
-                table,
-                uid,
-                field,
-                value
-            });
-
+            const result = await this.sendRequest({ action: 'move', table, uid, target: finalTarget });
             if (result.ok) {
                 this.showNotification('Saved successfully', 'success');
                 this.announceToScreenReader('Changes saved successfully');
@@ -626,250 +662,343 @@ class PixelCodaFE {
             } else {
                 throw new Error(result.message || 'Save failed');
             }
+            else throw new Error(result.message);
         } catch (error) {
-            console.error('Save failed:', error);
-            this.showNotification('Save failed: ' + error.message, 'error');
+            this.showNotification('Move failed: ' + error.message, 'error');
+            location.reload();
         }
     }
 
-    /**
-     * Save all modified elements
-     */
-    async saveAll() {
-        const modifiedElements = this.editableElements.filter(el =>
-            el.classList.contains('pc-fe-modified')
-        );
+    async deleteElement() {
+        if (!this.activeRecord || !confirm('Delete this element?')) return;
+        const record = this.activeRecord;
+        const { table, uid } = record.dataset;
 
-        if (modifiedElements.length === 0) {
-            this.showNotification('No changes to save', 'info');
-            return;
-        }
-
-        this.showNotification('Saving ' + modifiedElements.length + ' elements...', 'info');
+        record.style.display = 'none';
+        this.hideElementToolbar();
 
         try {
-            const promises = modifiedElements.map(el => this.saveElement(el));
-            await Promise.all(promises);
-
-            modifiedElements.forEach(el => el.classList.remove('pc-fe-modified'));
-            this.showNotification('All changes saved successfully', 'success');
+            const result = await this.sendRequest({ action: 'delete', table, uid });
+            if (result.ok) {
+                this.announceToScreenReader('Element deleted successfully');
+                this.showNotification('Element deleted', 'success');
+                record.remove();
+            } else throw new Error(result.message);
         } catch (error) {
-            console.error('Bulk save failed:', error);
-            this.showNotification('Some saves failed', 'error');
+            record.style.display = '';
+            this.showNotification('Delete failed: ' + error.message, 'error');
+        }
+    }
+
+    async toggleVisibility() {
+        if (!this.activeRecord) return;
+        const { table, uid } = this.activeRecord.dataset;
+
+        try {
+            const result = await this.sendRequest({ action: 'toggleVisibility', table, uid });
+            if (result.ok) {
+                this.showNotification('Visibility toggled', 'success');
+                const isHidden = this.activeRecord.style.opacity === '0.5';
+                this.activeRecord.style.opacity = isHidden ? '1' : '0.5';
+            } else throw new Error(result.message);
+        } catch (error) {
+            this.showNotification('Toggle failed: ' + error.message, 'error');
         }
     }
 
     /**
-     * Handle AI action
+     * Content Creation with Picker
      */
-    async handleAIAction() {
-        const activeElement = document.querySelector('[data-pc-field][contenteditable="true"]:focus');
-        if (!activeElement) {
-            this.showNotification('Please select a text field first', 'warning');
-            return;
-        }
+    async showContentTypePicker(pid, colPos) {
+        const overlay = document.createElement('div');
+        overlay.className = 'pc-fe-picker-overlay';
+        overlay.innerHTML = `
+            <div class="pc-fe-picker">
+                <h3>New Element</h3>
+                <div class="pc-fe-picker-grid">
+                    <button data-type="text">Text</button>
+                    <button data-type="header">Header</button>
+                    <button data-type="textpic">Text & Image</button>
+                    <button data-type="image">Image</button>
+                    <button data-type="html">HTML</button>
+                </div>
+                <button class="pc-fe-picker-cancel">Cancel</button>
+            </div>
+        `;
+        document.body.appendChild(overlay);
 
-        // Placeholder for AI integration
-        const currentText = activeElement.textContent || activeElement.innerText || '';
-        const aiSuggestion = '[AI Suggestion] Enhanced: ' + currentText;
+        return new Promise((resolve) => {
+            overlay.addEventListener('click', async (e) => {
+                const btn = e.target.closest('button');
+                if (!btn) return;
 
-        activeElement.innerHTML = aiSuggestion;
-        activeElement.classList.add('pc-fe-modified');
-
-        this.dispatchEvent('aiActionPerformed', {
-            element: activeElement,
-            suggestion: aiSuggestion
+                const type = btn.dataset.type;
+                overlay.remove();
+                if (type) {
+                    await this.createContentElement(pid, colPos, type);
+                }
+                resolve();
+            });
         });
-        this.showNotification('AI suggestion applied', 'success');
     }
 
-    /**
-     * Create content element
-     */
-    async createContentElement(pid, colPos) {
-        if (!this.config.ajaxUrl || !this.config.csrfToken) {
-            console.error('Missing configuration for content creation');
-            return;
-        }
-
+    async createContentElement(pid, colPos, cType = 'text') {
         const newId = 'NEW' + Math.floor(Math.random() * 1e6);
         const data = {
             tt_content: {
                 [newId]: {
                     pid: parseInt(pid, 10),
                     colPos: parseInt(colPos, 10),
-                    CType: 'text',
-                    header: 'New Element',
-                    bodytext: '<p>Click to edit this content...</p>'
+                    CType: cType,
+                    header: 'New ' + cType,
+                    bodytext: '<p>Click to edit...</p>'
                 }
             }
         };
 
+        this.showNotification('Creating element...', 'info');
+
         try {
-            const result = await this.sendRequest({
-                data: JSON.stringify(data),
-                cmd: JSON.stringify({})
-            });
-
+            const result = await this.sendRequest({ data: JSON.stringify(data) });
             if (result.ok) {
-                this.showNotification('New element created', 'success');
-                this.dispatchEvent('elementCreated', {
-                    pid,
-                    colPos,
-                    data
-                });
-
-                // Reload page to show new element
-                setTimeout(() => location.reload(), 500);
-            } else {
-                throw new Error(result.message || 'Creation failed');
-            }
+                this.showNotification('Element created', 'success');
+                location.reload();
+            } else throw new Error(result.message);
         } catch (error) {
-            console.error('Create failed:', error);
-            this.showNotification('Failed to create element: ' + error.message, 'error');
+            this.showNotification('Create failed: ' + error.message, 'error');
         }
     }
 
     /**
-     * Create element globally (find best position)
+     * Draft State Logic
      */
-    async createGlobalElement() {
-        const firstDropzone = document.querySelector('[data-pc-dropzone]');
-        if (firstDropzone) {
-            await this.createContentElement(firstDropzone.dataset.targetPid, firstDropzone.dataset.colPos);
-        } else {
-            // Fallback: create in colPos 0 on current page
-            const pidElement = document.querySelector('[data-pid]');
-            const pid = pidElement ? pidElement.dataset.pid : '1';
-            await this.createContentElement(pid, '0');
+    saveToDraft(element) {
+        const { table, uid, field } = element.dataset;
+        const value = element.innerHTML;
+        this.draft[`${table}:${uid}:${field}`] = value;
+        localStorage.setItem(this.storageKey, JSON.stringify(this.draft));
+    }
+
+    loadDraft() {
+        const stored = localStorage.getItem(this.storageKey);
+        if (stored) {
+            try {
+                this.draft = JSON.parse(stored);
+            } catch (e) {
+                this.draft = {};
+            }
         }
     }
 
-    /**
-     * Save field to backend
-     */
-    async saveField({
-        table,
-        uid,
-        field,
-        value
-    }) {
-        return this.sendRequest({
-            table,
-            uid,
-            field,
-            value
+    applyDraft() {
+        Object.entries(this.draft).forEach(([key, value]) => {
+            const [table, uid, field] = key.split(':');
+            const el = document.querySelector(`[data-pc-field][data-table="${table}"][data-uid="${uid}"][data-field="${field}"]`);
+            if (el) {
+                if (field === 'bodytext') el.innerHTML = value;
+                else el.textContent = value;
+                this.markAsModified(el);
+            }
         });
     }
 
+    clearDraft() {
+        this.draft = {};
+        localStorage.removeItem(this.storageKey);
+    }
+
     /**
-     * Send request to backend
+     * UI Helpers
      */
-    async sendRequest(data) {
-        if (!this.config.ajaxUrl || !this.config.csrfToken) {
-            throw new Error('Missing configuration');
+    toggleEditMode() {
+        this.editMode = !this.editMode;
+        this.setEditableState(this.editMode);
+        document.getElementById('pc-edit-toggle')?.classList.toggle('active', this.editMode);
+
+        if (this.editMode) this.injectAddBetweenButtons();
+        else {
+            this.removeAddBetweenButtons();
+            this.hideElementToolbar();
+            this.bubbleMenu.hidden = true;
+            this.activeRecord = null;
         }
 
         const formData = new URLSearchParams({
             formToken: this.config.csrfToken, // SaveController expects formToken
             ...data
         });
+    }
 
-        const response = await fetch(this.config.ajaxUrl, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-                'X-Requested-With': 'XMLHttpRequest'
-            },
-            body: formData
+    createAddButton(reference, position) {
+        const btn = document.createElement('button');
+        btn.className = 'pc-add-between';
+        btn.innerHTML = '+';
+        btn.setAttribute('aria-label', 'Add content here');
+        btn.dataset.targetPid = reference.dataset.pid || document.querySelector('[data-pid]')?.dataset.pid || 0;
+        btn.dataset.colPos = reference.dataset.colPos || 0;
+        if (position === 'before') reference.before(btn);
+        else reference.after(btn);
+    }
+
+    removeAddBetweenButtons() {
+        document.querySelectorAll('.pc-add-between').forEach(el => el.remove());
+    }
+
+    wrapRecords() {
+        document.querySelectorAll('[data-pc-field]').forEach(field => {
+            let record = field.closest('[data-pc-record]');
+            if (!record) {
+                record = field.parentElement;
+                record.setAttribute('data-pc-record', '');
+                record.dataset.table = field.dataset.table;
+                record.dataset.uid = field.dataset.uid;
+            }
         });
+    }
 
-        if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    showElementToolbar(record) {
+        if (!this.elementToolbar) return;
+        const rect = record.getBoundingClientRect();
+        this.elementToolbar.style.top = `${rect.top + window.scrollY}px`;
+        this.elementToolbar.style.left = `${rect.left + window.scrollX}px`;
+        this.elementToolbar.hidden = false;
+        document.querySelectorAll('.pc-fe-selected').forEach(el => el.classList.remove('pc-fe-selected'));
+        record.classList.add('pc-fe-selected');
+    }
+
+    hideElementToolbar() {
+        if (this.elementToolbar) this.elementToolbar.hidden = true;
+        document.querySelectorAll('.pc-fe-selected').forEach(el => el.classList.remove('pc-fe-selected'));
+    }
+
+    /**
+     * Standard Event Handlers
+     */
+    handleMouseOver(event) {
+        if (!this.editMode) return;
+        const record = event.target.closest('[data-pc-record]');
+        if (record && record !== this.activeRecord) {
+            this.activeRecord = record;
+            this.showElementToolbar(record);
         }
+    }
 
-        return await response.json();
+    handleFocusIn(event) {
+        if (!this.editMode) return;
+        const record = event.target.closest('[data-pc-record]');
+        if (record && record !== this.activeRecord) {
+            this.activeRecord = record;
+            this.showElementToolbar(record);
+        }
+    }
+
+    handleInput(event) {
+        const el = event.target.closest('[data-pc-field]');
+        if (!el || !this.editMode) return;
+        this.markAsModified(el);
+        this.saveToDraft(el);
+        this.updateSaveButtonState();
+    }
+
+    async handleFocusOut(event) {
+        const el = event.target.closest('[data-pc-field]');
+        if (!el || !this.editMode) return;
+        if (this.config.autoSave) await this.saveElement(el);
+    }
+
+    handleKeyDown(event) {
+        if ((event.ctrlKey || event.metaKey) && event.key === 's') {
+            event.preventDefault();
+            this.saveAll();
+        } else if (event.key === 'Escape' && this.editMode) {
+            this.toggleEditMode();
+        }
     }
 
     /**
-     * Show notification to user
+     * Drag & Drop
      */
-    showNotification(message, type = 'info') {
-        // Create simple notification element
-        const notification = document.createElement('div');
-        notification.className = `pc-fe-notification pc-fe-notification--${type}`;
-        notification.innerHTML = `
-            <span>${message}</span>
-            <button type="button" onclick="this.parentElement.remove()">×</button>
-        `;
+    handleDragStart(event) {
+        if (!this.editMode) return;
+        const handle = event.target.closest('.pc-fe-drag-handle');
+        if (!handle) return;
+        const record = handle.closest('[data-pc-record]');
+        if (!record) return;
+        event.dataTransfer.setData('text/plain', record.dataset.uid);
+        event.dataTransfer.effectAllowed = 'move';
+        record.classList.add('pc-fe-dragging');
+        document.body.classList.add('pc-fe-is-dragging');
+    }
 
-        // Add styles
-        notification.style.cssText = `
-            position: fixed;
-            top: 1rem;
-            right: 1rem;
-            padding: 0.75rem 1rem;
-            background: ${this.getNotificationColor(type)};
-            color: white;
-            border-radius: 0.5rem;
-            z-index: 999998;
-            font: 14px/1.2 system-ui;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            max-width: 300px;
-        `;
+    handleDragOver(event) {
+        if (!this.editMode) return;
+        const record = event.target.closest('[data-pc-record]');
+        if (!record || record.classList.contains('pc-fe-dragging')) return;
+        event.preventDefault();
+        event.dataTransfer.dropEffect = 'move';
+        const rect = record.getBoundingClientRect();
+        const midpoint = rect.top + rect.height / 2;
+        document.querySelectorAll('.pc-fe-drop-indicator').forEach(el => el.remove());
+        const indicator = document.createElement('div');
+        indicator.className = 'pc-fe-drop-indicator';
+        if (event.clientY < midpoint) record.before(indicator);
+        else record.after(indicator);
+        indicator.dataset.targetUid = record.dataset.uid;
+        indicator.dataset.position = event.clientY < midpoint ? 'before' : 'after';
+    }
 
-        document.body.appendChild(notification);
+    async handleDrop(event) {
+        if (!this.editMode) return;
+        const indicator = document.querySelector('.pc-fe-drop-indicator');
+        if (!indicator) return;
+        event.preventDefault();
+        const draggedUid = event.dataTransfer.getData('text/plain');
+        const { targetUid, position } = indicator.dataset;
+        if (draggedUid === targetUid) { this.handleDragEnd(); return; }
 
-        // Auto-remove after 3 seconds
-        setTimeout(() => notification.remove(), 3000);
+        const draggedEl = document.querySelector(`[data-pc-record][data-uid="${draggedUid}"]`);
+        const targetEl = document.querySelector(`[data-pc-record][data-uid="${targetUid}"]`);
+
+        let finalTarget;
+        if (position === 'before') {
+            const prev = targetEl.previousElementSibling;
+            finalTarget = (prev && prev.hasAttribute('data-pc-record')) ? -prev.dataset.uid : (targetEl.dataset.pid || 0);
+        } else finalTarget = -targetUid;
+
+        try {
+            const result = await this.sendRequest({ action: 'move', table: draggedEl?.dataset.table || 'tt_content', uid: draggedUid, target: finalTarget });
+            if (result.ok) {
+                this.announceToScreenReader('Element reordered successfully');
+                this.showNotification('Reordered', 'success');
+                location.reload();
+            } else throw new Error(result.message);
+        } catch (error) {
+            this.showNotification('Reorder failed: ' + error.message, 'error');
+            this.handleDragEnd();
+        }
+    }
+
+    handleDragEnd() {
+        document.querySelectorAll('.pc-fe-dragging').forEach(el => el.classList.remove('pc-fe-dragging'));
+        document.querySelectorAll('.pc-fe-drop-indicator').forEach(el => el.remove());
+        document.body.classList.remove('pc-fe-is-dragging');
     }
 
     /**
-     * Get notification color based on type
+     * Backend Communication
      */
-    getNotificationColor(type) {
-        const colors = {
-            success: '#10B981',
-            error: '#EF4444',
-            warning: '#F59E0B',
-            info: '#3B82F6'
-        };
-        return colors[type] || colors.info;
-    }
-
-    /**
-     * Dispatch custom event
-     */
-    dispatchEvent(eventName, detail = {}) {
-        const event = new CustomEvent(`pixelcoda:${eventName}`, {
-            detail
-        });
-        this.eventDispatcher.dispatchEvent(event);
-        document.dispatchEvent(event);
-    }
-
-    /**
-     * Add event listener
-     */
-    addEventListener(eventName, callback) {
-        this.eventDispatcher.addEventListener(`pixelcoda:${eventName}`, callback);
-    }
-
-    /**
-     * Remove event listener
-     */
-    removeEventListener(eventName, callback) {
-        this.eventDispatcher.removeEventListener(`pixelcoda:${eventName}`, callback);
-    }
-
-    /**
-     * Event handlers
-     */
-    onEditModeChanged(event) {
-        console.log('Edit mode changed:', event.detail.editMode);
+    async saveElement(element) {
+        const { table, uid, field } = element.dataset;
+        try {
+            const result = await this.sendRequest({ table, uid, field, value: element.innerHTML });
+            if (result.ok) {
+                this.announceToScreenReader('Changes saved successfully');
+                this.showNotification('Saved', 'success');
+                this.dispatchEvent('elementSaved', { element, table, uid, field });
+            } else throw new Error(result.message);
+        } catch (error) {
+            this.showNotification('Save failed: ' + error.message, 'error');
+        }
     }
 
     onElementSaved(event) {
@@ -884,24 +1013,49 @@ class PixelCodaFE {
         this.updateSaveButtonState();
     }
 
-    onElementCreated(event) {
-        console.log('Element created:', event.detail);
+    async sendRequest(data) {
+        if (!this.config.ajaxUrl || !this.config.csrfToken) throw new Error('Unconfigured');
+        const formData = new URLSearchParams({ formToken: this.config.csrfToken, ...data });
+        const res = await fetch(this.config.ajaxUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-Requested-With': 'XMLHttpRequest' },
+            body: formData
+        });
+        if (!res.ok) throw new Error(res.statusText);
+        return res.json();
     }
 
     /**
-     * Mark element as modified
+     * State Management UI
      */
-    markAsModified(element) {
-        element.classList.add('pc-fe-modified');
+    updateSaveButtonState() {
+        const saveBtn = document.getElementById('pc-save');
+        const discardBtn = document.getElementById('pc-discard');
+        const hasChanges = Object.keys(this.draft).length > 0 || this.editableElements.some(el => el.classList.contains('pc-fe-modified'));
+
+        if (saveBtn) {
+            saveBtn.disabled = !hasChanges;
+            saveBtn.classList.toggle('dirty', hasChanges);
+        }
+        if (discardBtn) discardBtn.disabled = !hasChanges;
+
+        const status = document.getElementById('pc-fe-status');
+        if (status) {
+            const message = hasChanges ? `${Object.keys(this.draft).length} unsaved changes` : '';
+            if (status.textContent !== message) {
+                status.textContent = message;
+                status.dataset.state = hasChanges ? 'warning' : '';
+                if (message) status.setAttribute('aria-live', 'polite');
+            }
+        }
     }
 
-    /**
-     * Get all modified elements
-     */
-    getModifiedElements() {
-        return this.editableElements.filter(el =>
-            el.classList.contains('pc-fe-modified')
-        );
+    onElementSaved(event) {
+        const { table, uid, field } = event.detail;
+        delete this.draft[`${table}:${uid}:${field}`];
+        localStorage.setItem(this.storageKey, JSON.stringify(this.draft));
+        event.detail.element.classList.remove('pc-fe-modified');
+        this.updateSaveButtonState();
     }
 
     /**
@@ -922,8 +1076,17 @@ class PixelCodaFE {
      * Reset all modifications
      */
     resetModifications() {
+        this.editableElements.forEach(el => el.classList.remove('pc-fe-modified'));
+        this.clearDraft();
+        this.updateSaveButtonState();
+    }
+
+    markAsModified(el) { el.classList.add('pc-fe-modified'); }
+
+    setEditableState(editable) {
         this.editableElements.forEach(el => {
-            el.classList.remove('pc-fe-modified');
+            el.contentEditable = editable ? 'true' : 'false';
+            el.classList.toggle('pc-fe-editable', editable);
         });
         this.clearDraft();
         this.updateSaveButtonState();
@@ -1018,18 +1181,36 @@ class PixelCodaFE {
             }
         }
     }
+
+    scanEditableElements() {
+        this.editableElements = Array.from(document.querySelectorAll('[data-pc-field]'));
+    }
+
+    showNotification(msg, type = 'info') {
+        const n = document.createElement('div');
+        n.className = `pc-fe-notification pc-fe-notification--${type}`;
+        n.style.cssText = `position:fixed;top:1rem;right:1rem;padding:0.75rem 1rem;background:${this.getNotificationColor(type)};color:white;border-radius:0.5rem;z-index:999999;box-shadow:0 4px 12px rgba(0,0,0,0.15);`;
+        n.textContent = msg;
+        document.body.appendChild(n);
+        setTimeout(() => n.remove(), 3000);
+    }
+
+    getNotificationColor(t) {
+        return { success: '#10B981', error: '#EF4444', warning: '#F59E0B' }[t] || '#3B82F6';
+    }
+
+    announceToScreenReader(message) {
+        const status = document.getElementById('pc-fe-status');
+        if (status) {
+            status.textContent = message;
+            status.setAttribute('aria-live', 'assertive');
+            setTimeout(() => this.updateSaveButtonState(), 3000);
+        }
+    }
+
+    dispatchEvent(n, d = {}) { document.dispatchEvent(new CustomEvent(`pixelcoda:${n}`, { detail: d })); }
+    addEventListener(n, c) { document.addEventListener(`pixelcoda:${n}`, c); }
 }
 
-// Initialize when DOM is ready
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => {
-        window.PixelCodaFE = new PixelCodaFE();
-    });
-} else {
-    window.PixelCodaFE = new PixelCodaFE();
-}
-
-// Backward compatibility with old editor.js
-if (!window.init) {
-    window.init = () => console.log('PixelCoda FE: Legacy init() called - using new architecture');
-}
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', () => window.PixelCodaFE = new PixelCodaFE());
+else window.PixelCodaFE = new PixelCodaFE();

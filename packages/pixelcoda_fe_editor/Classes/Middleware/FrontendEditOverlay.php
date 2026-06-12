@@ -211,10 +211,10 @@ HTML;
             ->select('uid', 'pid', 'CType', 'header', 'bodytext', 'colPos', 'sorting')
             ->from('tt_content')
             ->where(
-                $queryBuilder->expr()->eq('pid', $queryBuilder->createNamedParameter($pageId, \Doctrine\DBAL\ParameterType::INTEGER)),
-                $queryBuilder->expr()->eq('colPos', $queryBuilder->createNamedParameter(0, \Doctrine\DBAL\ParameterType::INTEGER))
+                $queryBuilder->expr()->eq('pid', $queryBuilder->createNamedParameter($pageId, \Doctrine\DBAL\ParameterType::INTEGER))
             )
-            ->orderBy('sorting')
+            ->orderBy('colPos')
+            ->addOrderBy('sorting')
             ->executeQuery()
             ->fetchAllAssociative();
 
